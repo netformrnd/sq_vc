@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>스퀘어건축사사무소 26년 연차 신청 시스템</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -63,6 +64,7 @@
         .day-cell:hover:not(.empty):not(.weekend):not(.holiday) { background: var(--bg-primary); transform: translateY(-2px); }
         .day-cell.empty { background: transparent; cursor: default; }
         .day-cell.weekend, .day-cell.holiday { opacity: 0.4; cursor: not-allowed; }
+        .day-cell.selected { border: 2px solid var(--accent-blue); background: rgba(59, 130, 246, 0.15); }
         .day-number { font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; }
         .day-cell.sunday .day-number { color: var(--accent-red); }
         .day-cell.saturday .day-number { color: var(--accent-blue); }
@@ -72,9 +74,11 @@
         .day-leave-item.user-1 { background: rgba(16, 185, 129, 0.3); color: #6ee7b7; border-left: 3px solid #10b981; }
         .day-leave-item.user-2 { background: rgba(236, 72, 153, 0.3); color: #f9a8d4; border-left: 3px solid #ec4899; }
         .day-leave-item.pending { opacity: 0.6; border-style: dashed; }
+        .day-leave-item.cancel-requested { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border-left: 3px solid var(--accent-red); }
         .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
         .status-badge.pending { background: rgba(249, 115, 22, 0.2); color: var(--accent-orange); }
         .status-badge.approved { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .status-badge.cancel-requested { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
         .leave-type-legend { display: flex; gap: 16px; justify-content: center; padding: 16px; background: var(--bg-tertiary); border-radius: 10px; flex-wrap: wrap; margin-top: 16px; }
         .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
         .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
@@ -99,6 +103,7 @@
         .selected-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 6px; }
         .selected-item.pending { border-left: 3px solid var(--accent-orange); }
         .selected-item.approved { border-left: 3px solid var(--accent-green); }
+        .selected-item.cancel-requested { border-left: 3px solid var(--accent-red); }
         .selected-item-info { display: flex; align-items: center; gap: 10px; flex: 1; }
         .selected-item-dot { width: 8px; height: 8px; border-radius: 50%; }
         .selected-item-date { font-weight: 500; font-size: 0.85rem; }
@@ -247,6 +252,7 @@
                     <div class="leave-option" data-type="quarter" onclick="selectLeaveType('quarter')"><div class="leave-option-dot quarter"></div><div class="leave-option-info"><div class="leave-option-name">반반차</div><div class="leave-option-desc">0.25일 차감</div></div></div>
                 </div>
                 <p style="margin-top: 16px; font-size: 0.8rem; color: var(--accent-orange);">※ 신청 후 관리자 승인이 필요합니다.</p>
+                <p style="margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary);">※ 연차는 회계연도(1월~12월) 기준으로 지급되며, 퇴사 시 재산정될 수 있습니다.</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeLeaveModal()">닫기</button>
@@ -270,11 +276,14 @@
                 <div id="adminContent" style="display: none;">
                     <div class="tabs">
                         <button class="tab active" onclick="switchAdminTab('pending')">승인 대기 <span id="pendingCount"></span></button>
+                        <button class="tab" onclick="switchAdminTab('cancelRequests')">취소 요청 <span id="cancelRequestCount"></span></button>
                         <button class="tab" onclick="switchAdminTab('users')">팀원 관리</button>
                         <button class="tab" onclick="switchAdminTab('leaves')">연차 관리</button>
+                        <button class="tab" onclick="switchAdminTab('history')">취소 이력</button>
                         <button class="tab" onclick="switchAdminTab('settings')">설정</button>
                     </div>
                     <div id="adminTabPending" class="admin-tab-content"><div class="pending-list" id="pendingList"></div></div>
+                    <div id="adminTabCancelRequests" class="admin-tab-content" style="display: none;"><div id="cancelRequestList"></div></div>
                     <div id="adminTabUsers" class="admin-tab-content" style="display: none;">
                         <div class="user-manage-list" id="userManageList"></div>
                         <h4 style="margin: 20px 0 12px; font-size: 0.9rem;">팀원 추가</h4>
@@ -288,6 +297,7 @@
                         <div class="form-group"><label class="form-label">새 비밀번호</label><input type="password" class="form-input" id="newPassword" placeholder="새 비밀번호"></div>
                         <button class="btn btn-secondary" style="width: 100%;" onclick="changePassword()">비밀번호 변경</button>
                     </div>
+                    <div id="adminTabHistory" class="admin-tab-content" style="display: none;"><div id="cancelHistoryList"></div><button class="btn btn-danger" style="width: 100%; margin-top: 16px;" onclick="clearCancelHistory()">취소 이력 전체 삭제</button></div>
                 </div>
             </div>
             <div class="modal-footer"><button class="btn btn-secondary" onclick="closeAdminModal()">닫기</button></div>
@@ -319,6 +329,27 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeEditLeaveModal()">취소</button>
                 <button class="btn btn-primary" onclick="saveUserLeave()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 취소 요청 모달 -->
+    <div class="modal-overlay" id="cancelRequestModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">연차 취소 요청</div>
+                <button class="modal-close" onclick="closeCancelRequestModal()"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            <div class="modal-body">
+                <p id="cancelRequestInfo" style="margin-bottom:16px;font-size:0.95rem"></p>
+                <div class="form-group">
+                    <label class="form-label">취소 사유</label>
+                    <textarea class="form-textarea" id="cancelReason" placeholder="취소 사유를 입력하세요"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCancelRequestModal()">닫기</button>
+                <button class="btn btn-danger" onclick="submitCancelRequest()">취소 요청</button>
             </div>
         </div>
     </div>
@@ -357,8 +388,9 @@
                 { id: 1, name: '김영성', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} },
                 { id: 2, name: '신수진', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} }
             ],
-            currentUserId: 0, currentMonth: 0, adminPassword: '1234', selectedDate: null, selectedType: null, editingUserId: null
+            currentUserId: 0, currentMonth: 0, adminPassword: '1234', selectedDates: [], selectedType: null, editingUserId: null, cancelHistory: [], cancelRequestDate: null
         };
+        let isDragging = false, dragStartDate = null;
         const holidays2026 = {'2026-01-01':'신정','2026-02-16':'설날연휴','2026-02-17':'설날','2026-02-18':'설날연휴','2026-03-01':'삼일절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-06-06':'현충일','2026-08-15':'광복절','2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'크리스마스'};
         const leaveDeduction = { full: 1, half: 0.5, quarter: 0.25 };
         const leaveLabels = { full: '연차', half: '반차', quarter: '반반차' };
@@ -376,24 +408,27 @@
                         if (typeof u.leaves[d] === 'string') u.leaves[d] = { type: u.leaves[d], status: 'approved' };
                     });
                 });
+                if (!state.cancelHistory) state.cancelHistory = [];
+                if (!state.selectedDates) state.selectedDates = [];
             }
         }
         function getCurrentUser() { return state.users.find(u => u.id === state.currentUserId); }
         function getTotalBonus(user) { return (user.bonusLeaves || []).reduce((s, b) => s + b.days, 0); }
         function getTotalLeave(user) { return user.totalLeave + getTotalBonus(user); }
-        function calculateUsed(user) { return Object.values(user.leaves).reduce((s, l) => l.status === 'approved' ? s + leaveDeduction[l.type] : s, 0); }
+        function calculateUsed(user) { return Object.values(user.leaves).reduce((s, l) => (l.status === 'approved' || l.status === 'cancel-requested') ? s + leaveDeduction[l.type] : s, 0); }
         function calculatePending(user) { return Object.values(user.leaves).reduce((s, l) => l.status === 'pending' ? s + leaveDeduction[l.type] : s, 0); }
         function getPendingCount(user) { return Object.values(user.leaves).filter(l => l.status === 'pending').length; }
         function getTotalPendingCount() { return state.users.reduce((s, u) => s + getPendingCount(u), 0); }
+        function getCancelRequestCount() { let c = 0; state.users.forEach(u => { c += Object.values(u.leaves).filter(l => l.status === 'cancel-requested').length; }); return c; }
 
         function renderUserTabs() {
             const c = document.getElementById('userTabs');
             c.innerHTML = state.users.map(u => {
                 const used = calculateUsed(u), color = userColors[u.id % userColors.length];
-                let info = u.unlimited ? '<span class="user-leave-info unlimited">무제한</span>' : `<span class="user-leave-info">${getTotalLeave(u) - used}/${getTotalLeave(u)}</span>`;
+                let info = u.unlimited ? '' : `<span class="user-leave-info">${getTotalLeave(u) - used}/${getTotalLeave(u)}</span>`;
                 return `<div class="user-tab ${u.id === state.currentUserId ? 'active' : ''}" onclick="selectUser(${u.id})"><div class="user-dot" style="background:${color}"></div><span>${u.name}</span>${info}</div>`;
             }).join('');
-            const pc = getTotalPendingCount(), badge = document.getElementById('pendingBadge');
+            const pc = getTotalPendingCount() + getCancelRequestCount(), badge = document.getElementById('pendingBadge');
             badge.textContent = pc; badge.style.display = pc > 0 ? 'inline' : 'none';
         }
 
@@ -413,13 +448,21 @@
             for (let d = 1; d <= dim; d++) {
                 const date = new Date(2026, m, d), dow = date.getDay(), ds = `2026-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 let cls = ['day-cell']; if (dow === 0) cls.push('sunday','weekend'); if (dow === 6) cls.push('saturday','weekend'); if (holidays2026[ds]) cls.push('holiday');
-                const click = dow !== 0 && dow !== 6 && !holidays2026[ds], leaves = getLeavesForDate(ds);
-                html += `<div class="${cls.join(' ')}" ${click ? `onclick="openLeaveModal('${ds}')"` : ''}><div class="day-number">${d}</div><div class="day-leaves">`;
-                leaves.forEach(l => html += `<div class="day-leave-item user-${l.userId} ${l.status}">${l.userName} ${leaveLabels[l.type]}</div>`);
+                if (state.selectedDates && state.selectedDates.includes(ds)) cls.push('selected');
+                const isClickable = dow !== 0 && dow !== 6 && !holidays2026[ds], leaves = getLeavesForDate(ds);
+                html += `<div class="${cls.join(' ')}" data-date="${ds}" ${isClickable ? `onmousedown="startDrag('${ds}')" onmouseenter="onDrag('${ds}')" onmouseup="endDrag()"` : ''}><div class="day-number">${d}</div><div class="day-leaves">`;
+                leaves.forEach(l => { let statusCls = l.status === 'cancel-requested' ? 'cancel-requested' : l.status; html += `<div class="day-leave-item user-${l.userId} ${statusCls}">${l.userName} ${leaveLabels[l.type]}</div>`; });
                 html += '</div></div>';
             }
             document.getElementById('calendar').innerHTML = html + '</div>';
         }
+
+        function isValidDate(ds) { const d = new Date(ds), dow = d.getDay(); return dow !== 0 && dow !== 6 && !holidays2026[ds]; }
+        function startDrag(ds) { const u = getCurrentUser(); if (u.leaves[ds]) return; isDragging = true; dragStartDate = ds; state.selectedDates = [ds]; renderCalendar(); }
+        function onDrag(ds) { if (!isDragging || !isValidDate(ds)) return; const u = getCurrentUser(); if (u.leaves[ds]) return; const all = getDateRange(dragStartDate, ds); state.selectedDates = all.filter(d => isValidDate(d) && !u.leaves[d]); renderCalendar(); }
+        function endDrag() { if (isDragging && state.selectedDates.length > 0) { isDragging = false; openLeaveModal(); } isDragging = false; }
+        function getDateRange(a, b) { const r = []; let s = new Date(a), e = new Date(b); if (s > e) { let t = s; s = e; e = t; } while (s <= e) { r.push(s.toISOString().split('T')[0]); s.setDate(s.getDate() + 1); } return r; }
+        document.addEventListener('mouseup', () => { if (isDragging) endDrag(); });
 
         function getLeavesForDate(ds) {
             const r = [];
@@ -444,7 +487,7 @@
         function renderTeamOverview() {
             document.getElementById('teamOverview').innerHTML = state.users.map(u => {
                 const used = calculateUsed(u), color = userColors[u.id % userColors.length], bt = getTotalBonus(u);
-                if (u.unlimited) return `<div class="team-member"><div class="team-member-dot" style="background:${color}"></div><div class="team-member-info"><div class="team-member-name">${u.name}</div><div class="team-member-stats">사용 ${used}일</div></div><span class="unlimited-badge">무제한</span></div>`;
+                if (u.unlimited) return `<div class="team-member"><div class="team-member-dot" style="background:${color}"></div><div class="team-member-info"><div class="team-member-name">${u.name}</div><div class="team-member-stats">사용 ${used}일</div></div></div>`;
                 const t = getTotalLeave(u), r = t - used, pct = t > 0 ? (used / t) * 100 : 0;
                 return `<div class="team-member"><div class="team-member-dot" style="background:${color}"></div><div class="team-member-info"><div class="team-member-name">${u.name}${bt > 0 ? '<span style="color:var(--accent-yellow);font-size:0.7rem;margin-left:6px">포상+'+bt+'</span>' : ''}</div><div class="team-member-stats">사용 ${used}일 / 잔여 ${r}일</div></div><div class="team-member-bar"><div class="team-member-bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
             }).join('');
@@ -456,36 +499,91 @@
             c.innerHTML = sorted.map(([ds, l]) => {
                 const [y, m, d] = ds.split('-'), date = new Date(2026, parseInt(m)-1, parseInt(d)), wd = weekdays[date.getDay()];
                 const dc = l.type === 'full' ? 'var(--accent-green)' : l.type === 'half' ? 'var(--accent-yellow)' : 'var(--accent-purple)';
-                const badge = l.status === 'pending' ? '<span class="status-badge pending">승인대기</span>' : '<span class="status-badge approved">승인완료</span>';
-                return `<div class="selected-item ${l.status}"><div class="selected-item-info"><div class="selected-item-dot" style="background:${dc}"></div><div><div class="selected-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) ${badge}</div><div class="selected-item-type">${leaveLabels[l.type]} - ${leaveDeduction[l.type]}일</div></div></div></div>`;
+                let badge = '', actionBtn = '', itemCls = l.status;
+                if (l.status === 'pending') {
+                    badge = '<span class="status-badge pending">승인대기</span>';
+                    actionBtn = `<button class="btn btn-danger btn-small" onclick="cancelMyLeave('${ds}')">취소</button>`;
+                } else if (l.status === 'cancel-requested') {
+                    badge = '<span class="status-badge cancel-requested">취소요청중</span>';
+                } else {
+                    badge = '<span class="status-badge approved">승인완료</span>';
+                    actionBtn = `<button class="btn btn-secondary btn-small" onclick="openCancelRequestModal('${ds}')">취소요청</button>`;
+                }
+                return `<div class="selected-item ${itemCls}"><div class="selected-item-info"><div class="selected-item-dot" style="background:${dc}"></div><div><div class="selected-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) ${badge}</div><div class="selected-item-type">${leaveLabels[l.type]} - ${leaveDeduction[l.type]}일</div></div></div><div>${actionBtn}</div></div>`;
             }).join('');
+        }
+
+        function cancelMyLeave(ds) {
+            const u = getCurrentUser();
+            if (u.leaves[ds] && u.leaves[ds].status === 'pending') {
+                if (confirm('해당 연차 신청을 취소하시겠습니까?')) {
+                    delete u.leaves[ds];
+                    saveState();
+                    updateUI();
+                    showToast('연차 신청이 취소되었습니다.', 'success');
+                }
+            } else {
+                showToast('승인 완료된 연차는 관리자에게 문의하세요.', 'error');
+            }
+        }
+
+        function openCancelRequestModal(ds) {
+            state.cancelRequestDate = ds;
+            const u = getCurrentUser(), [y, m, d] = ds.split('-');
+            document.getElementById('cancelRequestInfo').textContent = `${parseInt(m)}월 ${parseInt(d)}일 ${leaveLabels[u.leaves[ds].type]} 취소를 요청합니다.`;
+            document.getElementById('cancelReason').value = '';
+            document.getElementById('cancelRequestModal').classList.add('active');
+        }
+        function closeCancelRequestModal() { document.getElementById('cancelRequestModal').classList.remove('active'); state.cancelRequestDate = null; }
+        function submitCancelRequest() {
+            const reason = document.getElementById('cancelReason').value.trim();
+            if (!reason) { showToast('취소 사유를 입력해주세요.', 'error'); return; }
+            const u = getCurrentUser(), ds = state.cancelRequestDate;
+            if (u.leaves[ds]) {
+                u.leaves[ds].status = 'cancel-requested';
+                u.leaves[ds].cancelReason = reason;
+                u.leaves[ds].cancelRequestDate = new Date().toISOString();
+                saveState(); updateUI(); closeCancelRequestModal();
+                showToast('취소 요청이 접수되었습니다.', 'success');
+            }
         }
 
         function openLeaveModal(ds) {
             const u = getCurrentUser();
-            if (u.leaves[ds]) { showToast('이미 신청된 연차입니다. 수정은 관리자에게 문의하세요.', 'error'); return; }
-            state.selectedDate = ds; state.selectedType = null;
-            const [y, m, d] = ds.split('-');
-            document.getElementById('leaveModalTitle').textContent = `${u.name} - ${parseInt(m)}월 ${parseInt(d)}일`;
-            const leaves = getLeavesForDate(ds), ic = document.getElementById('dateLeavesInfo');
-            if (leaves.length > 0) {
-                ic.innerHTML = '<div class="date-leaves-title">이 날짜의 연차 현황</div>' + leaves.map(l => `<div class="date-leave-user"><div class="date-leave-user-dot" style="background:${userColors[l.userId % userColors.length]}"></div><span>${l.userName}</span><span style="color:var(--text-secondary);margin-left:auto">${leaveLabels[l.type]} (${l.status === 'pending' ? '대기' : '승인'})</span></div>`).join('');
-                ic.style.display = 'block';
-            } else ic.style.display = 'none';
+            if (ds) {
+                if (u.leaves[ds]) { showToast('이미 신청된 연차입니다.', 'error'); return; }
+                state.selectedDates = [ds];
+            }
+            if (!state.selectedDates || state.selectedDates.length === 0) return;
+            state.selectedType = null;
+            const firstDs = state.selectedDates[0], [y, m, d] = firstDs.split('-');
+            if (state.selectedDates.length > 1) {
+                document.getElementById('leaveModalTitle').textContent = `${u.name} - ${state.selectedDates.length}일 연속 연차 신청`;
+                document.getElementById('dateLeavesInfo').innerHTML = `<div class="date-leaves-title">선택된 날짜</div><div style="font-size:0.85rem">${state.selectedDates.map(dd => { const p = dd.split('-'); return `${parseInt(p[1])}/${parseInt(p[2])}`; }).join(', ')}</div>`;
+                document.getElementById('dateLeavesInfo').style.display = 'block';
+            } else {
+                document.getElementById('leaveModalTitle').textContent = `${u.name} - ${parseInt(m)}월 ${parseInt(d)}일`;
+                const leaves = getLeavesForDate(firstDs), ic = document.getElementById('dateLeavesInfo');
+                if (leaves.length > 0) {
+                    ic.innerHTML = '<div class="date-leaves-title">이 날짜의 연차 현황</div>' + leaves.map(l => `<div class="date-leave-user"><div class="date-leave-user-dot" style="background:${userColors[l.userId % userColors.length]}"></div><span>${l.userName}</span><span style="color:var(--text-secondary);margin-left:auto">${leaveLabels[l.type]}</span></div>`).join('');
+                    ic.style.display = 'block';
+                } else ic.style.display = 'none';
+            }
             document.querySelectorAll('.leave-option').forEach(o => o.classList.remove('selected'));
             document.getElementById('leaveModal').classList.add('active');
         }
-        function closeLeaveModal() { document.getElementById('leaveModal').classList.remove('active'); state.selectedDate = null; state.selectedType = null; }
+        function closeLeaveModal() { document.getElementById('leaveModal').classList.remove('active'); state.selectedDates = []; state.selectedType = null; renderCalendar(); }
         function selectLeaveType(t) { state.selectedType = t; document.querySelectorAll('.leave-option').forEach(o => o.classList.remove('selected')); document.querySelector(`.leave-option[data-type="${t}"]`).classList.add('selected'); }
         function confirmLeave() {
-            if (!state.selectedDate || !state.selectedType) { showToast('연차 유형을 선택해주세요.', 'error'); return; }
-            const u = getCurrentUser();
+            if (!state.selectedDates || state.selectedDates.length === 0 || !state.selectedType) { showToast('연차 유형을 선택해주세요.', 'error'); return; }
+            const u = getCurrentUser(), totalDays = state.selectedDates.length * leaveDeduction[state.selectedType];
             if (!u.unlimited) {
-                const ded = leaveDeduction[state.selectedType], t = getTotalLeave(u), will = calculateUsed(u) + calculatePending(u) + ded;
+                const t = getTotalLeave(u), will = calculateUsed(u) + calculatePending(u) + totalDays;
                 if (will > t) { showToast('잔여 연차가 부족합니다!', 'error'); return; }
             }
-            u.leaves[state.selectedDate] = { type: state.selectedType, status: 'pending', requestDate: new Date().toISOString() };
-            showToast(`${leaveLabels[state.selectedType]} 신청 완료. 관리자 승인을 기다려주세요.`, 'success');
+            state.selectedDates.forEach(ds => { u.leaves[ds] = { type: state.selectedType, status: 'pending', requestDate: new Date().toISOString() }; });
+            const msg = state.selectedDates.length > 1 ? `${state.selectedDates.length}일 연차 신청 완료` : `${leaveLabels[state.selectedType]} 신청 완료`;
+            showToast(`${msg}. 관리자 승인을 기다려주세요.`, 'success');
             closeLeaveModal(); saveState(); updateUI();
         }
 
@@ -494,7 +592,7 @@
         function adminLogin() {
             if (document.getElementById('adminPassword').value === state.adminPassword) {
                 document.getElementById('adminLoginForm').style.display = 'none'; document.getElementById('adminContent').style.display = 'block';
-                renderPendingList(); renderUserManageList(); renderLeaveManageList(); updatePendingCount(); showToast('관리자 로그인 성공', 'success');
+                renderPendingList(); renderCancelRequestList(); renderUserManageList(); renderLeaveManageList(); renderCancelHistory(); updatePendingCount(); showToast('관리자 로그인 성공', 'success');
             } else showToast('비밀번호가 틀렸습니다.', 'error');
         }
         function switchAdminTab(tab) {
@@ -502,9 +600,17 @@
             document.querySelectorAll('.tabs .tab').forEach(e => e.classList.remove('active'));
             document.getElementById(`adminTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.display = 'block';
             event.target.classList.add('active');
-            if (tab === 'pending') renderPendingList(); if (tab === 'users') renderUserManageList(); if (tab === 'leaves') renderLeaveManageList();
+            if (tab === 'pending') renderPendingList();
+            if (tab === 'cancelRequests') renderCancelRequestList();
+            if (tab === 'users') renderUserManageList();
+            if (tab === 'leaves') renderLeaveManageList();
+            if (tab === 'history') renderCancelHistory();
         }
-        function updatePendingCount() { const c = getTotalPendingCount(); document.getElementById('pendingCount').textContent = c > 0 ? `(${c})` : ''; }
+        function updatePendingCount() { 
+            const pc = getTotalPendingCount(), cc = getCancelRequestCount();
+            document.getElementById('pendingCount').textContent = pc > 0 ? `(${pc})` : '';
+            document.getElementById('cancelRequestCount').textContent = cc > 0 ? `(${cc})` : '';
+        }
 
         function renderPendingList() {
             const c = document.getElementById('pendingList'), items = [];
@@ -518,6 +624,62 @@
         }
         function approveLeave(uid, ds) { const u = state.users.find(x => x.id === uid); if (u && u.leaves[ds]) { u.leaves[ds].status = 'approved'; saveState(); renderPendingList(); updatePendingCount(); updateUI(); showToast(`${u.name}의 연차가 승인되었습니다.`, 'success'); } }
         function rejectLeave(uid, ds) { const u = state.users.find(x => x.id === uid); if (u && u.leaves[ds] && confirm(`${u.name}의 연차 신청을 반려하시겠습니까?`)) { delete u.leaves[ds]; saveState(); renderPendingList(); updatePendingCount(); updateUI(); showToast(`${u.name}의 연차가 반려되었습니다.`, 'success'); } }
+
+        function renderCancelRequestList() {
+            const c = document.getElementById('cancelRequestList'), items = [];
+            state.users.forEach(u => Object.entries(u.leaves).forEach(([ds, l]) => { if (l.status === 'cancel-requested') items.push({ userId: u.id, userName: u.name, date: ds, type: l.type, reason: l.cancelReason }); }));
+            if (items.length === 0) { c.innerHTML = '<div class="empty-state"><p>취소 요청이 없습니다.</p></div>'; return; }
+            items.sort((a, b) => a.date.localeCompare(b.date));
+            c.innerHTML = items.map(i => {
+                const [y, m, d] = i.date.split('-'), date = new Date(2026, parseInt(m)-1, parseInt(d)), wd = weekdays[date.getDay()];
+                return `<div class="pending-item" style="border-left-color:var(--accent-red)"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[i.userId % userColors.length]}"></div><div class="pending-item-info"><div class="pending-item-user">${i.userName}</div><div class="pending-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) - ${leaveLabels[i.type]}</div><div style="font-size:0.8rem;color:var(--accent-red);margin-top:4px">사유: ${i.reason}</div></div><div class="pending-item-actions"><button class="btn btn-success btn-small" onclick="approveCancelRequest(${i.userId},'${i.date}')">승인</button><button class="btn btn-secondary btn-small" onclick="rejectCancelRequest(${i.userId},'${i.date}')">거부</button></div></div>`;
+            }).join('');
+        }
+        function approveCancelRequest(uid, ds) {
+            const u = state.users.find(x => x.id === uid);
+            if (u && u.leaves[ds]) {
+                state.cancelHistory.push({ userId: uid, userName: u.name, date: ds, type: u.leaves[ds].type, reason: u.leaves[ds].cancelReason, cancelledAt: new Date().toISOString() });
+                delete u.leaves[ds];
+                saveState(); renderCancelRequestList(); renderCancelHistory(); updatePendingCount(); updateUI();
+                showToast(`${u.name}의 연차 취소가 승인되었습니다.`, 'success');
+            }
+        }
+        function rejectCancelRequest(uid, ds) {
+            const u = state.users.find(x => x.id === uid);
+            if (u && u.leaves[ds] && confirm(`${u.name}의 취소 요청을 거부하시겠습니까?`)) {
+                u.leaves[ds].status = 'approved';
+                delete u.leaves[ds].cancelReason;
+                delete u.leaves[ds].cancelRequestDate;
+                saveState(); renderCancelRequestList(); updatePendingCount(); updateUI();
+                showToast('취소 요청이 거부되었습니다.', 'success');
+            }
+        }
+        function renderCancelHistory() {
+            const c = document.getElementById('cancelHistoryList');
+            if (!state.cancelHistory || state.cancelHistory.length === 0) { c.innerHTML = '<div class="empty-state"><p>취소 이력이 없습니다.</p></div>'; return; }
+            const sorted = [...state.cancelHistory].sort((a, b) => b.cancelledAt.localeCompare(a.cancelledAt));
+            c.innerHTML = sorted.map((h, idx) => {
+                const [y, m, d] = h.date.split('-'), cancelDate = new Date(h.cancelledAt).toLocaleDateString('ko-KR');
+                const origIdx = state.cancelHistory.findIndex(x => x.cancelledAt === h.cancelledAt && x.userId === h.userId && x.date === h.date);
+                return `<div style="padding:12px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent-red);display:flex;align-items:flex-start;justify-content:space-between"><div style="flex:1"><div style="font-weight:600">${h.userName}</div><div style="font-size:0.85rem;color:var(--text-secondary)">${parseInt(m)}월 ${parseInt(d)}일 ${leaveLabels[h.type]} 취소</div><div style="font-size:0.8rem;color:var(--accent-red);margin-top:4px">사유: ${h.reason}</div><div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">취소일: ${cancelDate}</div></div><button class="btn btn-danger btn-small" onclick="deleteCancelHistoryItem(${origIdx})">삭제</button></div>`;
+            }).join('');
+        }
+        function deleteCancelHistoryItem(idx) {
+            if (confirm('이 취소 이력을 삭제하시겠습니까?')) {
+                state.cancelHistory.splice(idx, 1);
+                saveState();
+                renderCancelHistory();
+                showToast('취소 이력이 삭제되었습니다.', 'success');
+            }
+        }
+        function clearCancelHistory() {
+            if (confirm('취소 이력을 전체 삭제하시겠습니까?')) {
+                state.cancelHistory = [];
+                saveState();
+                renderCancelHistory();
+                showToast('취소 이력이 삭제되었습니다.', 'success');
+            }
+        }
 
         function renderUserManageList() {
             document.getElementById('userManageList').innerHTML = state.users.map(u => {
@@ -609,7 +771,7 @@
             document.getElementById('reportSummary').innerHTML = `<div class="report-summary-card"><div class="report-summary-value" style="color:var(--accent-blue)">${totalAll}</div><div class="report-summary-label">전체 부여 연차</div></div><div class="report-summary-card"><div class="report-summary-value" style="color:var(--accent-purple)">${usedAll}</div><div class="report-summary-label">전체 사용 연차</div></div><div class="report-summary-card"><div class="report-summary-value" style="color:var(--accent-green)">${totalAll - usedAll - pendAll}</div><div class="report-summary-label">전체 잔여 연차</div></div><div class="report-summary-card"><div class="report-summary-value" style="color:var(--accent-orange)">${pendAll}</div><div class="report-summary-label">승인 대기</div></div>`;
             document.getElementById('reportTableBody').innerHTML = state.users.map(u => {
                 const bt = getTotalBonus(u), t = getTotalLeave(u), used = calculateUsed(u), pend = calculatePending(u), rem = u.unlimited ? '-' : (t - used - pend);
-                return `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${userColors[u.id % userColors.length]};margin-right:8px"></span>${u.name}</td><td>${u.unlimited ? '-' : u.totalLeave}</td><td>${u.unlimited ? '-' : bt}</td><td>${u.unlimited ? '무제한' : t}</td><td>${used}</td><td>${rem}</td><td>${getPendingCount(u)}</td></tr>`;
+                return `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${userColors[u.id % userColors.length]};margin-right:8px"></span>${u.name}</td><td>${u.unlimited ? '-' : u.totalLeave}</td><td>${u.unlimited ? '-' : bt}</td><td>${u.unlimited ? '-' : t}</td><td>${used}</td><td>${rem}</td><td>${getPendingCount(u)}</td></tr>`;
             }).join('');
             document.getElementById('reportDetails').innerHTML = state.users.map(u => {
                 const entries = Object.entries(u.leaves).sort((a, b) => a[0].localeCompare(b[0]));
@@ -618,20 +780,57 @@
             }).join('');
         }
         function exportReport() {
-            let csv = '이름,기본연차,포상연차,총연차,사용,잔여,대기\n';
+            // 시트1: 연차 현황 요약
+            const summaryData = [['이름', '기본연차', '포상연차', '총연차', '사용', '잔여', '대기']];
             state.users.forEach(u => {
                 const bt = getTotalBonus(u), t = getTotalLeave(u), used = calculateUsed(u), pend = calculatePending(u);
-                csv += `${u.name},${u.unlimited ? '무제한' : u.totalLeave},${u.unlimited ? '-' : bt},${u.unlimited ? '무제한' : t},${used},${u.unlimited ? '-' : (t - used - pend)},${getPendingCount(u)}\n`;
+                summaryData.push([
+                    u.name,
+                    u.unlimited ? '-' : u.totalLeave,
+                    u.unlimited ? '-' : bt,
+                    u.unlimited ? '-' : t,
+                    used,
+                    u.unlimited ? '-' : (t - used - pend),
+                    getPendingCount(u)
+                ]);
             });
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = '스퀘어건축사사무소_26년_연차_리포트.csv'; link.click();
+
+            // 시트2: 연차 사용일자 상세
+            const detailData = [['이름', '날짜', '연차유형', '차감일수', '상태']];
+            state.users.forEach(u => {
+                const entries = Object.entries(u.leaves).sort((a, b) => a[0].localeCompare(b[0]));
+                entries.forEach(([ds, l]) => {
+                    const [y, m, d] = ds.split('-');
+                    detailData.push([
+                        u.name,
+                        `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`,
+                        leaveLabels[l.type],
+                        leaveDeduction[l.type],
+                        l.status === 'pending' ? '승인대기' : l.status === 'cancel-requested' ? '취소요청' : '승인완료'
+                    ]);
+                });
+            });
+
+            // Excel 워크북 생성
+            const wb = XLSX.utils.book_new();
+            const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+            const ws2 = XLSX.utils.aoa_to_sheet(detailData);
+            
+            // 열 너비 설정
+            ws1['!cols'] = [{wch:10},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8}];
+            ws2['!cols'] = [{wch:10},{wch:18},{wch:10},{wch:10},{wch:10}];
+            
+            XLSX.utils.book_append_sheet(wb, ws1, '연차현황');
+            XLSX.utils.book_append_sheet(wb, ws2, '사용일자상세');
+            
+            XLSX.writeFile(wb, '스퀘어건축사사무소_26년_연차_리포트.xlsx');
             showToast('리포트가 다운로드되었습니다.', 'success');
         }
 
         function showToast(msg, type = 'success') { const t = document.getElementById('toast'); t.textContent = msg; t.className = `toast ${type} show`; setTimeout(() => t.classList.remove('show'), 3000); }
         function updateUI() { renderUserTabs(); renderTeamLegend(); renderCalendar(); updateStats(); renderTeamOverview(); renderSelectedList(); }
 
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLeaveModal(); closeAdminModal(); closeEditLeaveModal(); closeReportModal(); } });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLeaveModal(); closeAdminModal(); closeEditLeaveModal(); closeReportModal(); closeCancelRequestModal(); } });
         document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); }));
 
         loadState(); updateUI();
