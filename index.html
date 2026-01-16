@@ -384,11 +384,10 @@
         const userColors = ['#3b82f6', '#10b981', '#ec4899', '#f59e0b', '#8b5cf6', '#06b6d4'];
         let state = {
             users: [
-                { id: 0, name: '조현식', totalLeave: 0, bonusLeaves: [], unlimited: true, leaves: {} },
                 { id: 1, name: '김영성', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} },
                 { id: 2, name: '신수진', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} }
             ],
-            currentUserId: 0, currentMonth: 0, adminPassword: '1234', selectedDates: [], selectedType: null, editingUserId: null, cancelHistory: [], cancelRequestDate: null
+            currentUserId: 1, currentMonth: 0, adminPassword: '1234', selectedDates: [], selectedType: null, editingUserId: null, cancelHistory: [], cancelRequestDate: null
         };
         let isDragging = false, dragStartDate = null;
         const holidays2026 = {'2026-01-01':'신정','2026-02-16':'설날연휴','2026-02-17':'설날','2026-02-18':'설날연휴','2026-03-01':'삼일절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-06-06':'현충일','2026-08-15':'광복절','2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'크리스마스'};
@@ -402,6 +401,12 @@
             const saved = localStorage.getItem('leaveSystem4');
             if (saved) {
                 state = JSON.parse(saved);
+                // 조현식(id: 0) 제거
+                state.users = state.users.filter(u => u.id !== 0);
+                // currentUserId가 조현식이었다면 첫 번째 사용자로 변경
+                if (state.currentUserId === 0 && state.users.length > 0) {
+                    state.currentUserId = state.users[0].id;
+                }
                 state.users.forEach(u => {
                     if (!u.bonusLeaves) u.bonusLeaves = [];
                     Object.keys(u.leaves).forEach(d => {
@@ -410,6 +415,7 @@
                 });
                 if (!state.cancelHistory) state.cancelHistory = [];
                 if (!state.selectedDates) state.selectedDates = [];
+                saveState(); // 변경사항 저장
             }
         }
         function getCurrentUser() { return state.users.find(u => u.id === state.currentUserId); }
