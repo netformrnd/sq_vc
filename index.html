@@ -275,15 +275,13 @@
                 </div>
                 <div id="adminContent" style="display: none;">
                     <div class="tabs">
-                        <button class="tab active" onclick="switchAdminTab('pending')">승인 대기 <span id="pendingCount"></span></button>
-                        <button class="tab" onclick="switchAdminTab('cancelRequests')">취소 요청 <span id="cancelRequestCount"></span></button>
+                        <button class="tab active" onclick="switchAdminTab('pending')">승인 대기 / 취소 요청 <span id="pendingCount"></span></button>
                         <button class="tab" onclick="switchAdminTab('users')">팀원 관리</button>
                         <button class="tab" onclick="switchAdminTab('leaves')">연차 관리</button>
                         <button class="tab" onclick="switchAdminTab('history')">취소 이력</button>
                         <button class="tab" onclick="switchAdminTab('settings')">설정</button>
                     </div>
-                    <div id="adminTabPending" class="admin-tab-content"><div class="pending-list" id="pendingList"></div></div>
-                    <div id="adminTabCancelRequests" class="admin-tab-content" style="display: none;"><div id="cancelRequestList"></div></div>
+                    <div id="adminTabPending" class="admin-tab-content"><div class="pending-list" id="pendingList"></div><div id="cancelRequestList" style="margin-top:16px"></div></div>
                     <div id="adminTabUsers" class="admin-tab-content" style="display: none;">
                         <div class="user-manage-list" id="userManageList"></div>
                         <h4 style="margin: 20px 0 12px; font-size: 0.9rem;">팀원 추가</h4>
@@ -297,7 +295,7 @@
                         <div class="form-group"><label class="form-label">새 비밀번호</label><input type="password" class="form-input" id="newPassword" placeholder="새 비밀번호"></div>
                         <button class="btn btn-secondary" style="width: 100%;" onclick="changePassword()">비밀번호 변경</button>
                     </div>
-                    <div id="adminTabHistory" class="admin-tab-content" style="display: none;"><div id="cancelHistoryList"></div><button class="btn btn-danger" style="width: 100%; margin-top: 16px;" onclick="clearCancelHistory()">취소 이력 전체 삭제</button></div>
+                    <div id="adminTabHistory" class="admin-tab-content" style="display: none;"><div id="cancelHistoryList"></div></div>
                 </div>
             </div>
             <div class="modal-footer"><button class="btn btn-secondary" onclick="closeAdminModal()">닫기</button></div>
@@ -613,20 +611,21 @@
             if (tab === 'history') renderCancelHistory();
         }
         function updatePendingCount() { 
-            const pc = getTotalPendingCount(), cc = getCancelRequestCount();
-            document.getElementById('pendingCount').textContent = pc > 0 ? `(${pc})` : '';
-            document.getElementById('cancelRequestCount').textContent = cc > 0 ? `(${cc})` : '';
+            const pc = getTotalPendingCount(), cc = getCancelRequestCount(), total = pc + cc;
+            document.getElementById('pendingCount').textContent = total > 0 ? `(${total})` : '';
         }
 
         function renderPendingList() {
             const c = document.getElementById('pendingList'), items = [];
             state.users.forEach(u => Object.entries(u.leaves).forEach(([ds, l]) => { if (l.status === 'pending') items.push({ userId: u.id, userName: u.name, date: ds, type: l.type }); }));
-            if (items.length === 0) { c.innerHTML = '<div class="empty-state"><p>승인 대기 중인 연차가 없습니다.</p></div>'; return; }
-            items.sort((a, b) => a.date.localeCompare(b.date));
-            c.innerHTML = items.map(i => {
-                const [y, m, d] = i.date.split('-'), date = new Date(2026, parseInt(m)-1, parseInt(d)), wd = weekdays[date.getDay()];
-                return `<div class="pending-item"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[i.userId % userColors.length]}"></div><div class="pending-item-info"><div class="pending-item-user">${i.userName}</div><div class="pending-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) - ${leaveLabels[i.type]} (${leaveDeduction[i.type]}일)</div></div><div class="pending-item-actions"><button class="btn btn-success btn-small" onclick="approveLeave(${i.userId},'${i.date}')">승인</button><button class="btn btn-danger btn-small" onclick="rejectLeave(${i.userId},'${i.date}')">반려</button></div></div>`;
-            }).join('');
+            if (items.length === 0) { c.innerHTML = '<div class="empty-state"><p>승인 대기 중인 연차가 없습니다.</p></div>'; } else {
+                items.sort((a, b) => a.date.localeCompare(b.date));
+                c.innerHTML = '<div style="font-weight:600;margin-bottom:10px;color:var(--accent-orange)">📋 승인 대기</div>' + items.map(i => {
+                    const [y, m, d] = i.date.split('-'), date = new Date(2026, parseInt(m)-1, parseInt(d)), wd = weekdays[date.getDay()];
+                    return `<div class="pending-item"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[i.userId % userColors.length]}"></div><div class="pending-item-info"><div class="pending-item-user">${i.userName}</div><div class="pending-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) - ${leaveLabels[i.type]} (${leaveDeduction[i.type]}일)</div></div><div class="pending-item-actions"><button class="btn btn-success btn-small" onclick="approveLeave(${i.userId},'${i.date}')">승인</button><button class="btn btn-danger btn-small" onclick="rejectLeave(${i.userId},'${i.date}')">반려</button></div></div>`;
+                }).join('');
+            }
+            renderCancelRequestList();
         }
         function approveLeave(uid, ds) { const u = state.users.find(x => x.id === uid); if (u && u.leaves[ds]) { u.leaves[ds].status = 'approved'; saveState(); renderPendingList(); updatePendingCount(); updateUI(); showToast(`${u.name}의 연차가 승인되었습니다.`, 'success'); } }
         function rejectLeave(uid, ds) { const u = state.users.find(x => x.id === uid); if (u && u.leaves[ds] && confirm(`${u.name}의 연차 신청을 반려하시겠습니까?`)) { delete u.leaves[ds]; saveState(); renderPendingList(); updatePendingCount(); updateUI(); showToast(`${u.name}의 연차가 반려되었습니다.`, 'success'); } }
@@ -634,9 +633,9 @@
         function renderCancelRequestList() {
             const c = document.getElementById('cancelRequestList'), items = [];
             state.users.forEach(u => Object.entries(u.leaves).forEach(([ds, l]) => { if (l.status === 'cancel-requested') items.push({ userId: u.id, userName: u.name, date: ds, type: l.type, reason: l.cancelReason }); }));
-            if (items.length === 0) { c.innerHTML = '<div class="empty-state"><p>취소 요청이 없습니다.</p></div>'; return; }
+            if (items.length === 0) { c.innerHTML = ''; return; }
             items.sort((a, b) => a.date.localeCompare(b.date));
-            c.innerHTML = items.map(i => {
+            c.innerHTML = '<div style="font-weight:600;margin-bottom:10px;color:var(--accent-red)">🔄 취소 요청</div>' + items.map(i => {
                 const [y, m, d] = i.date.split('-'), date = new Date(2026, parseInt(m)-1, parseInt(d)), wd = weekdays[date.getDay()];
                 return `<div class="pending-item" style="border-left-color:var(--accent-red)"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[i.userId % userColors.length]}"></div><div class="pending-item-info"><div class="pending-item-user">${i.userName}</div><div class="pending-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) - ${leaveLabels[i.type]}</div><div style="font-size:0.8rem;color:var(--accent-red);margin-top:4px">사유: ${i.reason}</div></div><div class="pending-item-actions"><button class="btn btn-success btn-small" onclick="approveCancelRequest(${i.userId},'${i.date}')">승인</button><button class="btn btn-secondary btn-small" onclick="rejectCancelRequest(${i.userId},'${i.date}')">거부</button></div></div>`;
             }).join('');
@@ -667,7 +666,7 @@
             c.innerHTML = sorted.map((h, idx) => {
                 const [y, m, d] = h.date.split('-'), cancelDate = new Date(h.cancelledAt).toLocaleDateString('ko-KR');
                 const origIdx = state.cancelHistory.findIndex(x => x.cancelledAt === h.cancelledAt && x.userId === h.userId && x.date === h.date);
-                return `<div style="padding:12px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent-red);display:flex;align-items:flex-start;justify-content:space-between"><div style="flex:1"><div style="font-weight:600">${h.userName}</div><div style="font-size:0.85rem;color:var(--text-secondary)">${parseInt(m)}월 ${parseInt(d)}일 ${leaveLabels[h.type]} 취소</div><div style="font-size:0.8rem;color:var(--accent-red);margin-top:4px">사유: ${h.reason}</div><div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">취소일: ${cancelDate}</div></div><button class="btn btn-danger btn-small" onclick="deleteCancelHistoryItem(${origIdx})">삭제</button></div>`;
+                return `<div style="padding:8px 12px;background:var(--bg-tertiary);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--accent-red);display:flex;align-items:center;justify-content:space-between;font-size:0.85rem"><div style="flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:8px"><span style="font-weight:500">${h.userName}</span><span style="color:var(--text-secondary)">${parseInt(m)}/${parseInt(d)} ${leaveLabels[h.type]}</span><span style="color:var(--accent-red);font-size:0.8rem">사유: ${h.reason}</span><span style="color:var(--text-secondary);font-size:0.75rem">(${cancelDate})</span></div><button class="btn btn-danger" style="padding:3px 8px;font-size:0.7rem" onclick="deleteCancelHistoryItem(${origIdx})">삭제</button></div>`;
             }).join('');
         }
         function deleteCancelHistoryItem(idx) {
@@ -690,7 +689,7 @@
         function renderUserManageList() {
             document.getElementById('userManageList').innerHTML = state.users.map(u => {
                 const bt = getTotalBonus(u), lt = u.unlimited ? '무제한' : (bt > 0 ? `${getTotalLeave(u)}일 (기본 ${u.totalLeave} + 포상 ${bt})` : `${u.totalLeave}일`);
-                return `<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-tertiary);border-radius:10px;margin-bottom:8px"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[u.id % userColors.length]}"></div><div style="flex:1"><div style="font-weight:500">${u.name}</div><div style="font-size:0.8rem;color:var(--text-secondary)">연차: ${lt}</div></div><button class="btn btn-danger btn-small" onclick="deleteUser(${u.id})">삭제</button></div>`;
+                return `<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-tertiary);border-radius:10px;margin-bottom:8px"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[u.id % userColors.length]}"></div><div style="flex:1"><div style="font-weight:500">${u.name}</div><div style="font-size:0.8rem;color:var(--text-secondary)">연차: ${lt}</div></div><button class="btn btn-danger" style="padding:4px 10px;font-size:0.75rem" onclick="deleteUser(${u.id})">삭제</button></div>`;
             }).join('');
         }
 
@@ -699,7 +698,7 @@
                 const used = calculateUsed(u), pend = getPendingCount(u), bt = getTotalBonus(u);
                 const info = u.unlimited ? `무제한 | 사용: ${used}일 | 대기: ${pend}건` : `총: ${getTotalLeave(u)}일 (기본 ${u.totalLeave} + 포상 ${bt}) | 사용: ${used}일 | 잔여: ${getTotalLeave(u) - used}일 | 대기: ${pend}건`;
                 const entries = Object.entries(u.leaves).sort((a, b) => a[0].localeCompare(b[0]));
-                return `<div style="background:var(--bg-tertiary);border-radius:10px;padding:16px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[u.id % userColors.length]}"></div><div style="flex:1"><div style="font-weight:600">${u.name}</div><div style="font-size:0.8rem;color:var(--text-secondary)">${info}</div></div><button class="btn btn-secondary btn-small" onclick="openEditLeaveModal(${u.id})">연차 설정</button></div>${entries.length > 0 ? `<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px">신청 내역:</div><div style="display:flex;flex-wrap:wrap;gap:6px">${entries.map(([ds, l]) => { const [y, m, d] = ds.split('-'); return `<div style="display:flex;align-items:center;gap:6px;background:var(--bg-primary);padding:4px 10px;border-radius:6px;font-size:0.8rem"><span>${parseInt(m)}/${parseInt(d)} ${leaveLabels[l.type]}</span><span style="color:${l.status === 'pending' ? 'var(--accent-orange)' : 'var(--accent-green)'}">${l.status === 'pending' ? '대기' : '승인'}</span><button onclick="adminDeleteLeave(${u.id},'${ds}')" style="background:none;border:none;color:var(--accent-red);cursor:pointer;padding:2px">✕</button></div>`; }).join('')}</div>` : '<div style="font-size:0.8rem;color:var(--text-secondary)">신청 내역 없음</div>'}</div>`;
+                return `<div style="background:var(--bg-tertiary);border-radius:10px;padding:14px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:10px;height:10px;border-radius:50%;background:${userColors[u.id % userColors.length]}"></div><div style="flex:1"><div style="font-weight:500;font-size:0.85rem">${u.name}</div><div style="font-size:0.75rem;color:var(--text-secondary)">${info}</div></div><button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem" onclick="openEditLeaveModal(${u.id})">연차 설정</button></div>${entries.length > 0 ? `<div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:6px">신청 내역:</div><div style="display:flex;flex-wrap:wrap;gap:6px">${entries.map(([ds, l]) => { const [y, m, d] = ds.split('-'); return `<div style="display:flex;align-items:center;gap:6px;background:var(--bg-primary);padding:6px 12px;border-radius:6px;font-size:0.9rem"><span style="font-weight:500">${parseInt(m)}/${parseInt(d)} ${leaveLabels[l.type]}</span><span style="color:${l.status === 'pending' ? 'var(--accent-orange)' : 'var(--accent-green)'};font-size:0.85rem">${l.status === 'pending' ? '대기' : '승인'}</span><button onclick="adminDeleteLeave(${u.id},'${ds}')" style="background:none;border:none;color:var(--accent-red);cursor:pointer;padding:2px;font-size:0.75rem">✕</button></div>`; }).join('')}</div>` : '<div style="font-size:0.8rem;color:var(--text-secondary)">신청 내역 없음</div>'}</div>`;
             }).join('');
         }
         function adminDeleteLeave(uid, ds) { const u = state.users.find(x => x.id === uid); if (u && confirm(`${u.name}의 해당 연차를 삭제하시겠습니까?`)) { delete u.leaves[ds]; saveState(); renderLeaveManageList(); renderPendingList(); updatePendingCount(); updateUI(); showToast('연차가 삭제되었습니다.', 'success'); } }
