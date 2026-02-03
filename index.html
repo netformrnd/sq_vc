@@ -179,6 +179,11 @@
     </style>
 </head>
 <body>
+    <div id="loadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg-primary);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;">
+        <div style="width:40px;height:40px;border:4px solid var(--border-color);border-top:4px solid var(--accent-blue);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="color:var(--text-secondary);font-size:0.95rem;">데이터를 불러오는 중...</div>
+        <style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
+    </div>
     <div class="container">
         <header>
             <h1>스퀘어건축사사무소 26년 연차 신청 시스템</h1>
@@ -393,68 +398,152 @@
         const FB_CONFIG={apiKey:"AIzaSyCzngaCcenhH1tmZ7syugpI3H1wYBVhiJQ",authDomain:"test-168a4.firebaseapp.com",databaseURL:"https://test-168a4-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"test-168a4",storageBucket:"test-168a4.firebasestorage.app",messagingSenderId:"955362696992",appId:"1:955362696992:web:234b098db17412be27c145"};
         const fbApp=firebase.initializeApp(FB_CONFIG);
         const fbDb=firebase.database();
+        const DB_ROOT = '/sq_vc_shared'; // Firebase 공유 데이터 경로
 
         const userColors = ['#3b82f6', '#10b981', '#ec4899', '#f59e0b', '#8b5cf6', '#06b6d4'];
-        let state = {
+        const defaultState = {
             users: [
                 { id: 1, name: '김영성', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} },
                 { id: 2, name: '신수진', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} }
             ],
-            currentUserId: 1, currentMonth: new Date().getMonth(), adminPassword: 'ice080303', selectedDates: [], selectedType: null, editingUserId: null, cancelHistory: [], cancelRequestDate: null
+            adminPassword: 'ice080303', cancelHistory: []
+        };
+        // 공유 데이터 (Firebase에 저장) - users, adminPassword, cancelHistory
+        let state = {
+            users: [], currentUserId: 1, currentMonth: new Date().getMonth(),
+            adminPassword: 'ice080303', selectedDates: [], selectedType: null,
+            editingUserId: null, cancelHistory: [], cancelRequestDate: null
         };
         let isDragging = false, dragStartDate = null;
+        let isSaving = false; // 저장 중 플래그 (실시간 리스너 무한루프 방지)
         const holidays2026 = {'2026-01-01':'신정','2026-02-16':'설날연휴','2026-02-17':'설날','2026-02-18':'설날연휴','2026-03-01':'삼일절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-06-06':'현충일','2026-08-15':'광복절','2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'크리스마스'};
         const leaveDeduction = { full: 1, half: 0.5, quarter: 0.25 };
         const leaveLabels = { full: '연차', half: '반차', quarter: '반반차' };
         const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
         const weekdays = ['일','월','화','수','목','금','토'];
 
+        // ===== Firebase 실시간 저장/로드 =====
         function saveState() {
-            localStorage.setItem('leaveSystem4', JSON.stringify(state));
-            // Firebase에 승인된 휴가 데이터 동기화
-            syncToFirebase();
+            isSaving = true;
+            // 공유 데이터만 Firebase에 저장
+            const sharedData = {
+                users: state.users,
+                adminPassword: state.adminPassword,
+                cancelHistory: state.cancelHistory || [],
+                lastUpdated: new Date().toISOString()
+            };
+            fbDb.ref(DB_ROOT).set(sharedData).then(() => {
+                setTimeout(() => { isSaving = false; }, 500);
+            }).catch(e => {
+                console.error('Firebase save error:', e);
+                isSaving = false;
+                showToast('데이터 저장 실패. 다시 시도해주세요.', 'error');
+            });
+            // 개인 설정은 localStorage에 (현재 선택된 사용자 기억)
+            localStorage.setItem('sq_vc_local', JSON.stringify({
+                currentUserId: state.currentUserId
+            }));
         }
-        function syncToFirebase(){
-            try{
-                const vacData={};
-                state.users.forEach(u=>{
-                    Object.entries(u.leaves).forEach(([date,info])=>{
-                        if(info.status==='approved'||info.status==='cancel-requested'){
-                            if(!vacData[date])vacData[date]=[];
-                            vacData[date].push({
-                                name:u.name,
-                                type:info.type,
-                                label:leaveLabels[info.type]||info.type
-                            });
-                        }
-                    });
-                });
-                fbDb.ref('/sq_vc/leaves').set(vacData);
-                fbDb.ref('/sq_vc/meta/lastSync').set(new Date().toISOString());
-                fbDb.ref('/sq_vc/users').set(state.users.map(u=>({id:u.id,name:u.name})));
-            }catch(e){console.error('Firebase sync error:',e);}
-        }
+
         function loadState() {
-            const saved = localStorage.getItem('leaveSystem4');
-            if (saved) {
-                state = JSON.parse(saved);
-                // 조현식(id: 0) 제거
-                state.users = state.users.filter(u => u.id !== 0);
-                // currentUserId가 조현식이었다면 첫 번째 사용자로 변경
-                if (state.currentUserId === 0 && state.users.length > 0) {
-                    state.currentUserId = state.users[0].id;
-                }
+            return new Promise((resolve) => {
+                fbDb.ref(DB_ROOT).once('value').then(snapshot => {
+                    const data = snapshot.val();
+                    if (data && data.users && data.users.length > 0) {
+                        state.users = data.users;
+                        state.adminPassword = data.adminPassword || 'ice080303';
+                        state.cancelHistory = data.cancelHistory || [];
+                        // users 데이터 정규화
+                        state.users.forEach(u => {
+                            if (!u.bonusLeaves) u.bonusLeaves = [];
+                            if (!u.leaves) u.leaves = {};
+                            Object.keys(u.leaves).forEach(d => {
+                                if (typeof u.leaves[d] === 'string') u.leaves[d] = { type: u.leaves[d], status: 'approved' };
+                            });
+                        });
+                    } else {
+                        // Firebase에 데이터 없음 → 기존 localStorage에서 마이그레이션 시도
+                        const oldSaved = localStorage.getItem('leaveSystem4');
+                        if (oldSaved) {
+                            const oldState = JSON.parse(oldSaved);
+                            state.users = (oldState.users || defaultState.users).filter(u => u.id !== 0);
+                            state.adminPassword = oldState.adminPassword || 'ice080303';
+                            state.cancelHistory = oldState.cancelHistory || [];
+                            state.users.forEach(u => {
+                                if (!u.bonusLeaves) u.bonusLeaves = [];
+                                if (!u.leaves) u.leaves = {};
+                                Object.keys(u.leaves).forEach(d => {
+                                    if (typeof u.leaves[d] === 'string') u.leaves[d] = { type: u.leaves[d], status: 'approved' };
+                                });
+                            });
+                            // Firebase에 마이그레이션 저장
+                            saveState();
+                            showToast('기존 데이터를 공유 서버로 이전했습니다.', 'success');
+                        } else {
+                            // 완전 초기 상태
+                            state.users = JSON.parse(JSON.stringify(defaultState.users));
+                            state.adminPassword = defaultState.adminPassword;
+                            state.cancelHistory = [];
+                            saveState();
+                        }
+                    }
+                    // 개인 설정 로드
+                    const local = localStorage.getItem('sq_vc_local');
+                    if (local) {
+                        const localData = JSON.parse(local);
+                        if (localData.currentUserId && state.users.find(u => u.id === localData.currentUserId)) {
+                            state.currentUserId = localData.currentUserId;
+                        } else if (state.users.length > 0) {
+                            state.currentUserId = state.users[0].id;
+                        }
+                    } else if (state.users.length > 0) {
+                        state.currentUserId = state.users[0].id;
+                    }
+                    state.currentMonth = new Date().getMonth();
+                    resolve();
+                }).catch(e => {
+                    console.error('Firebase load error:', e);
+                    // 오프라인 폴백: localStorage 사용
+                    const oldSaved = localStorage.getItem('leaveSystem4');
+                    if (oldSaved) {
+                        const oldState = JSON.parse(oldSaved);
+                        state.users = oldState.users || defaultState.users;
+                        state.adminPassword = oldState.adminPassword || 'ice080303';
+                        state.cancelHistory = oldState.cancelHistory || [];
+                    } else {
+                        state.users = JSON.parse(JSON.stringify(defaultState.users));
+                        state.adminPassword = defaultState.adminPassword;
+                        state.cancelHistory = [];
+                    }
+                    state.currentMonth = new Date().getMonth();
+                    if (state.users.length > 0) state.currentUserId = state.users[0].id;
+                    showToast('오프라인 모드로 작동합니다.', 'error');
+                    resolve();
+                });
+            });
+        }
+
+        // ===== Firebase 실시간 리스너 (다른 사용자 변경 감지) =====
+        function startRealtimeSync() {
+            fbDb.ref(DB_ROOT).on('value', snapshot => {
+                if (isSaving) return; // 내가 저장한 것이면 무시
+                const data = snapshot.val();
+                if (!data || !data.users) return;
+                // 공유 데이터 업데이트
+                state.users = data.users;
+                state.adminPassword = data.adminPassword || 'ice080303';
+                state.cancelHistory = data.cancelHistory || [];
+                // users 데이터 정규화
                 state.users.forEach(u => {
                     if (!u.bonusLeaves) u.bonusLeaves = [];
-                    Object.keys(u.leaves).forEach(d => {
-                        if (typeof u.leaves[d] === 'string') u.leaves[d] = { type: u.leaves[d], status: 'approved' };
-                    });
+                    if (!u.leaves) u.leaves = {};
                 });
-                if (!state.cancelHistory) state.cancelHistory = [];
-                if (!state.selectedDates) state.selectedDates = [];
-                state.currentMonth = new Date().getMonth(); // 항상 현재 월로 시작
-                saveState(); // 변경사항 저장
-            }
+                // 현재 선택된 사용자가 삭제된 경우 처리
+                if (!state.users.find(u => u.id === state.currentUserId) && state.users.length > 0) {
+                    state.currentUserId = state.users[0].id;
+                }
+                updateUI();
+            });
         }
         function getCurrentUser() { return state.users.find(u => u.id === state.currentUserId); }
         function getTotalBonus(user) { return (user.bonusLeaves || []).reduce((s, b) => s + b.days, 0); }
@@ -480,7 +569,7 @@
             document.getElementById('teamLegend').innerHTML = state.users.map(u => `<div class="team-legend-item"><div class="team-legend-dot" style="background:${userColors[u.id % userColors.length]}"></div><span>${u.name}</span></div>`).join('');
         }
 
-        function selectUser(id) { state.currentUserId = id; saveState(); updateUI(); }
+        function selectUser(id) { state.currentUserId = id; localStorage.setItem('sq_vc_local', JSON.stringify({currentUserId: id})); updateUI(); }
         function changeMonth(d) { state.currentMonth += d; if (state.currentMonth < 0) state.currentMonth = 11; if (state.currentMonth > 11) state.currentMonth = 0; renderCalendar(); }
 
         function renderCalendar() {
@@ -800,7 +889,8 @@
             const existing = state.users.find(u => u.name === name);
             if (existing) {
                 state.currentUserId = existing.id;
-                saveState(); updateUI();
+                localStorage.setItem('sq_vc_local', JSON.stringify({currentUserId: existing.id}));
+                updateUI();
                 document.getElementById('quickJoinName').value = '';
                 showToast(`${name}님, 환영합니다! 달력에서 날짜를 클릭하여 연차를 신청하세요.`, 'success');
                 return;
@@ -899,7 +989,14 @@
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLeaveModal(); closeAdminModal(); closeEditLeaveModal(); closeReportModal(); closeCancelRequestModal(); } });
         document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); }));
 
-        loadState(); updateUI();
+        // 초기 로딩: Firebase에서 데이터 불러온 후 UI 렌더링 & 실시간 리스너 시작
+        loadState().then(() => {
+            updateUI();
+            startRealtimeSync();
+            // 로딩 오버레이 제거
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        });
     </script>
 </body>
 </html>
