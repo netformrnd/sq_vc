@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>스퀘어건축사사무소 26년 연차 신청 시스템</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -194,7 +196,15 @@
                 </button>
             </div>
         </header>
-        <div class="user-tabs" id="userTabs"></div><p class="subtitle" style="text-align:center;margin-top:-20px;margin-bottom:20px">본인 이름을 선택하고 달력에서 날짜를 클릭하여 연차를 신청하세요</p>
+        <div class="user-tabs" id="userTabs"></div>
+        <div style="text-align:center;margin-top:-10px;margin-bottom:20px;">
+            <p class="subtitle" style="margin-bottom:12px">본인 이름을 선택하고 달력에서 날짜를 클릭하여 연차를 신청하세요</p>
+            <div id="quickJoinArea" style="display:inline-flex;align-items:center;gap:8px;background:var(--bg-secondary);padding:10px 16px;border-radius:12px;border:1px solid var(--border-color);">
+                <span style="font-size:0.85rem;color:var(--text-secondary);">처음이신가요?</span>
+                <input type="text" id="quickJoinName" class="form-input" placeholder="이름 입력" style="width:140px;padding:8px 12px;font-size:0.9rem;">
+                <button class="btn btn-primary btn-small" onclick="quickJoin()">참여하기</button>
+            </div>
+        </div>
         <div class="dashboard">
             <div class="panel">
                 <div class="panel-header">
@@ -379,13 +389,18 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // Firebase 초기화
+        const FB_CONFIG={apiKey:"AIzaSyCzngaCcenhH1tmZ7syugpI3H1wYBVhiJQ",authDomain:"test-168a4.firebaseapp.com",databaseURL:"https://test-168a4-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"test-168a4",storageBucket:"test-168a4.firebasestorage.app",messagingSenderId:"955362696992",appId:"1:955362696992:web:234b098db17412be27c145"};
+        const fbApp=firebase.initializeApp(FB_CONFIG);
+        const fbDb=firebase.database();
+
         const userColors = ['#3b82f6', '#10b981', '#ec4899', '#f59e0b', '#8b5cf6', '#06b6d4'];
         let state = {
             users: [
                 { id: 1, name: '김영성', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} },
                 { id: 2, name: '신수진', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} }
             ],
-            currentUserId: 1, currentMonth: 0, adminPassword: '1234', selectedDates: [], selectedType: null, editingUserId: null, cancelHistory: [], cancelRequestDate: null
+            currentUserId: 1, currentMonth: new Date().getMonth(), adminPassword: 'ice080303', selectedDates: [], selectedType: null, editingUserId: null, cancelHistory: [], cancelRequestDate: null
         };
         let isDragging = false, dragStartDate = null;
         const holidays2026 = {'2026-01-01':'신정','2026-02-16':'설날연휴','2026-02-17':'설날','2026-02-18':'설날연휴','2026-03-01':'삼일절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-06-06':'현충일','2026-08-15':'광복절','2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'크리스마스'};
@@ -394,7 +409,31 @@
         const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
         const weekdays = ['일','월','화','수','목','금','토'];
 
-        function saveState() { localStorage.setItem('leaveSystem4', JSON.stringify(state)); }
+        function saveState() {
+            localStorage.setItem('leaveSystem4', JSON.stringify(state));
+            // Firebase에 승인된 휴가 데이터 동기화
+            syncToFirebase();
+        }
+        function syncToFirebase(){
+            try{
+                const vacData={};
+                state.users.forEach(u=>{
+                    Object.entries(u.leaves).forEach(([date,info])=>{
+                        if(info.status==='approved'||info.status==='cancel-requested'){
+                            if(!vacData[date])vacData[date]=[];
+                            vacData[date].push({
+                                name:u.name,
+                                type:info.type,
+                                label:leaveLabels[info.type]||info.type
+                            });
+                        }
+                    });
+                });
+                fbDb.ref('/sq_vc/leaves').set(vacData);
+                fbDb.ref('/sq_vc/meta/lastSync').set(new Date().toISOString());
+                fbDb.ref('/sq_vc/users').set(state.users.map(u=>({id:u.id,name:u.name})));
+            }catch(e){console.error('Firebase sync error:',e);}
+        }
         function loadState() {
             const saved = localStorage.getItem('leaveSystem4');
             if (saved) {
@@ -413,6 +452,7 @@
                 });
                 if (!state.cancelHistory) state.cancelHistory = [];
                 if (!state.selectedDates) state.selectedDates = [];
+                state.currentMonth = new Date().getMonth(); // 항상 현재 월로 시작
                 saveState(); // 변경사항 저장
             }
         }
@@ -753,6 +793,27 @@
             document.getElementById('newUserName').value = ''; document.getElementById('newUserLeave').value = '15'; document.getElementById('newUserUnlimited').checked = false;
             saveState(); updateUI(); renderUserManageList(); showToast(`${name}이(가) 추가되었습니다.`, 'success');
         }
+        function quickJoin() {
+            const name = document.getElementById('quickJoinName').value.trim();
+            if (!name) { showToast('이름을 입력해주세요.', 'error'); return; }
+            // 이미 등록된 이름인지 확인
+            const existing = state.users.find(u => u.name === name);
+            if (existing) {
+                state.currentUserId = existing.id;
+                saveState(); updateUI();
+                document.getElementById('quickJoinName').value = '';
+                showToast(`${name}님, 환영합니다! 달력에서 날짜를 클릭하여 연차를 신청하세요.`, 'success');
+                return;
+            }
+            const nid = Math.max(...state.users.map(u => u.id), -1) + 1;
+            state.users.push({ id: nid, name, totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} });
+            state.currentUserId = nid;
+            document.getElementById('quickJoinName').value = '';
+            saveState(); updateUI();
+            showToast(`${name}님이 등록되었습니다! 달력에서 날짜를 클릭하여 연차를 신청하세요.`, 'success');
+        }
+        document.getElementById('quickJoinName').addEventListener('keypress', function(e) { if (e.key === 'Enter') quickJoin(); });
+
         function deleteUser(uid) {
             if (state.users.length <= 1) { showToast('최소 1명의 팀원이 필요합니다.', 'error'); return; }
             const u = state.users.find(x => x.id === uid);
