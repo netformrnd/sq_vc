@@ -75,6 +75,18 @@
         .day-leave-item.user-0 { background: rgba(59, 130, 246, 0.3); border-left: 3px solid #3b82f6; }
         .day-leave-item.user-1 { background: rgba(16, 185, 129, 0.3); border-left: 3px solid #10b981; }
         .day-leave-item.user-2 { background: rgba(236, 72, 153, 0.3); border-left: 3px solid #ec4899; }
+        .day-leave-item.user-3 { background: rgba(245, 158, 11, 0.3); border-left: 3px solid #f59e0b; }
+        .day-leave-item.user-4 { background: rgba(139, 92, 246, 0.3); border-left: 3px solid #8b5cf6; }
+        .day-leave-item.user-5 { background: rgba(6, 182, 212, 0.3); border-left: 3px solid #06b6d4; }
+        .day-leave-item.user-6 { background: rgba(249, 115, 22, 0.3); border-left: 3px solid #f97316; }
+        .day-leave-item.user-7 { background: rgba(34, 197, 94, 0.3); border-left: 3px solid #22c55e; }
+        .day-leave-item.user-8 { background: rgba(168, 85, 247, 0.3); border-left: 3px solid #a855f7; }
+        .day-leave-item.user-9 { background: rgba(244, 63, 94, 0.3); border-left: 3px solid #f43f5e; }
+        .day-leave-item.user-10 { background: rgba(20, 184, 166, 0.3); border-left: 3px solid #14b8a6; }
+        .day-leave-item.user-11 { background: rgba(99, 102, 241, 0.3); border-left: 3px solid #6366f1; }
+        .day-leave-item.user-12 { background: rgba(234, 179, 8, 0.3); border-left: 3px solid #eab308; }
+        .day-leave-item.user-13 { background: rgba(217, 70, 239, 0.3); border-left: 3px solid #d946ef; }
+        .day-leave-item.user-14 { background: rgba(251, 146, 60, 0.3); border-left: 3px solid #fb923c; }
         .day-leave-item.pending { opacity: 0.6; border-style: dashed; }
         .day-leave-item.cancel-requested { background: rgba(239, 68, 68, 0.2); border-left: 3px solid var(--accent-red); }
         .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
@@ -131,6 +143,20 @@
         .leave-option-dot.full { background: var(--accent-green); }
         .leave-option-dot.half { background: var(--accent-yellow); }
         .leave-option-dot.quarter { background: var(--accent-purple); }
+        /* 시간 선택 영역 */
+        .time-picker-area { display: none; margin-top: 12px; padding: 16px; background: var(--bg-tertiary); border-radius: 10px; border: 1px solid var(--border-color); }
+        .time-picker-area.show { display: block; }
+        .time-picker-row { display: flex; align-items: center; gap: 10px; }
+        .time-picker-row label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 50px; }
+        .time-picker-row select { flex: 1; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; font-family: 'Noto Sans KR', sans-serif; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; }
+        .time-picker-row select:focus { outline: none; border-color: var(--accent-blue); }
+        .time-picker-row .time-sep { font-size: 1rem; color: var(--text-secondary); }
+        .time-picker-info { margin-top: 10px; font-size: 0.8rem; color: var(--accent-blue); font-weight: 500; }
+        .time-picker-hours { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--accent-purple); }
+        .time-preset-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .time-preset-btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: 'Noto Sans KR', sans-serif; }
+        .time-preset-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .time-preset-btn.active { border-color: var(--accent-blue); background: rgba(59,130,246,0.1); color: var(--accent-blue); }
         .leave-option-info { flex: 1; }
         .leave-option-name { font-weight: 500; font-size: 0.9rem; }
         .leave-option-desc { font-size: 0.75rem; color: var(--text-secondary); }
@@ -173,6 +199,14 @@
         .toast.error { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.15); }
         .toast.success { border-color: var(--accent-green); background: rgba(16, 185, 129, 0.15); }
         .notification-badge { background: var(--accent-red); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; margin-left: 6px; }
+        .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; }
+        .sync-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .sync-dot.online { background: var(--accent-green); box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
+        .sync-dot.offline { background: var(--accent-red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); }
+        .sync-dot.syncing { background: var(--accent-yellow); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .sync-update-flash { animation: flashBg 1.5s ease; }
+        @keyframes flashBg { 0% { background: rgba(59, 130, 246, 0.15); } 100% { background: transparent; } }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 3px; }
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
@@ -189,6 +223,11 @@
             <h1>스퀘어건축사사무소 26년 연차 신청 시스템</h1>
             
             <div class="admin-info">관리자: <strong>주유진</strong> (경영관리팀)</div>
+            <div class="sync-status" id="syncStatus">
+                <div class="sync-dot online" id="syncDot"></div>
+                <span id="syncText">실시간 연결됨</span>
+                <span id="lastSyncTime" style="margin-left:8px;font-size:0.75rem;color:var(--text-secondary)"></span>
+            </div>
             <div class="header-actions">
                 <button class="btn btn-secondary" onclick="openReportModal()">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -262,9 +301,25 @@
             <div class="modal-body">
                 <div class="date-leaves-info" id="dateLeavesInfo"></div>
                 <div class="leave-options">
-                    <div class="leave-option" data-type="full" onclick="selectLeaveType('full')"><div class="leave-option-dot full"></div><div class="leave-option-info"><div class="leave-option-name">연차</div><div class="leave-option-desc">1일 차감</div></div></div>
-                    <div class="leave-option" data-type="half" onclick="selectLeaveType('half')"><div class="leave-option-dot half"></div><div class="leave-option-info"><div class="leave-option-name">반차</div><div class="leave-option-desc">0.5일 차감</div></div></div>
-                    <div class="leave-option" data-type="quarter" onclick="selectLeaveType('quarter')"><div class="leave-option-dot quarter"></div><div class="leave-option-info"><div class="leave-option-name">반반차</div><div class="leave-option-desc">0.25일 차감</div></div></div>
+                    <div class="leave-option" data-type="full" onclick="selectLeaveType('full')"><div class="leave-option-dot full"></div><div class="leave-option-info"><div class="leave-option-name">연차</div><div class="leave-option-desc">1일 차감 (종일)</div></div></div>
+                    <div class="leave-option" data-type="half" onclick="selectLeaveType('half')"><div class="leave-option-dot half"></div><div class="leave-option-info"><div class="leave-option-name">반차</div><div class="leave-option-desc">0.5일 차감 (시간 선택)</div></div></div>
+                    <div class="leave-option" data-type="quarter" onclick="selectLeaveType('quarter')"><div class="leave-option-dot quarter"></div><div class="leave-option-info"><div class="leave-option-name">반반차</div><div class="leave-option-desc">0.25일 차감 (시간 선택)</div></div></div>
+                </div>
+                <!-- 시간 선택 영역 (반차/반반차 선택 시 표시) -->
+                <div class="time-picker-area" id="timePickerArea">
+                    <div style="font-size:0.85rem;font-weight:600;color:var(--text-primary);margin-bottom:12px;">시간 선택</div>
+                    <div class="time-preset-btns" id="timePresetBtns">
+                        <button class="time-preset-btn" onclick="applyTimePreset('am')">오전반차 (08:30~13:00)</button>
+                        <button class="time-preset-btn" onclick="applyTimePreset('pm')">오후반차 (13:00~17:30)</button>
+                    </div>
+                    <div class="time-picker-row" style="margin-top:12px;">
+                        <label>시작</label>
+                        <select id="leaveStartTime" onchange="onTimeChange()"></select>
+                        <span class="time-sep">~</span>
+                        <label>종료</label>
+                        <select id="leaveEndTime" onchange="onTimeChange()"></select>
+                    </div>
+                    <div class="time-picker-info" id="timePickerInfo"></div>
                 </div>
                 <p style="margin-top: 16px; font-size: 0.8rem; color: var(--accent-orange);">※ 신청 후 관리자 승인이 필요합니다.</p>
                 <p style="margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary);">※ 연차는 회계연도(1월~12월) 기준으로 지급되며, 퇴사 시 재산정될 수 있습니다.</p>
@@ -400,7 +455,7 @@
         const fbDb=firebase.database();
         const DB_ROOT = '/sq_vc_shared'; // Firebase 공유 데이터 경로
 
-        const userColors = ['#3b82f6', '#10b981', '#ec4899', '#f59e0b', '#8b5cf6', '#06b6d4'];
+        const userColors = ['#3b82f6', '#10b981', '#ec4899', '#f59e0b', '#8b5cf6', '#06b6d4', '#f97316', '#22c55e', '#a855f7', '#f43f5e', '#14b8a6', '#6366f1', '#eab308', '#d946ef', '#fb923c'];
         const defaultState = {
             users: [
                 { id: 1, name: '김영성', totalLeave: 15, bonusLeaves: [], unlimited: false, leaves: {} },
@@ -417,14 +472,111 @@
         let isDragging = false, dragStartDate = null;
         let isSaving = false; // 저장 중 플래그 (실시간 리스너 무한루프 방지)
         const holidays2026 = {'2026-01-01':'신정','2026-02-16':'설날연휴','2026-02-17':'설날','2026-02-18':'설날연휴','2026-03-01':'삼일절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-06-06':'현충일','2026-08-15':'광복절','2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'크리스마스'};
-        const leaveDeduction = { full: 1, half: 0.5, quarter: 0.25 };
-        const leaveLabels = { full: '연차', half: '반차', quarter: '반반차' };
+        const leaveDeduction = { full: 1, half: 0.5, 'half-am': 0.5, 'half-pm': 0.5, quarter: 0.25 };
+        const leaveLabels = { full: '연차', half: '반차', 'half-am': '오전반차', 'half-pm': '오후반차', quarter: '반반차' };
+
+        // 시간 선택 관련
+        function buildTimeOptions(selectId, defaultVal) {
+            const sel = document.getElementById(selectId);
+            sel.innerHTML = '';
+            // 08:30 ~ 18:00 (30분 단위)
+            for (let h = 8; h <= 18; h++) {
+                for (let m = (h === 8 ? 30 : 0); m < 60; m += 30) {
+                    if (h === 18 && m > 0) break;
+                    const val = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+                    const opt = document.createElement('option');
+                    opt.value = val; opt.textContent = val;
+                    if (val === defaultVal) opt.selected = true;
+                    sel.appendChild(opt);
+                }
+            }
+        }
+        function showTimePicker(type) {
+            const area = document.getElementById('timePickerArea');
+            const presetBtns = document.getElementById('timePresetBtns');
+            if (type === 'half' || type === 'quarter') {
+                area.classList.add('show');
+                // 반차: 오전/오후 프리셋, 반반차: 2시간 프리셋 (출근 08:30 기준)
+                if (type === 'quarter') {
+                    presetBtns.innerHTML = `
+                        <button class="time-preset-btn" onclick="applyTimePreset('q-am1')">오전 (08:30~10:30)</button>
+                        <button class="time-preset-btn" onclick="applyTimePreset('q-am2')">점심전 (10:30~12:30)</button>
+                        <button class="time-preset-btn" onclick="applyTimePreset('q-pm1')">오후 (13:30~15:30)</button>
+                        <button class="time-preset-btn" onclick="applyTimePreset('q-pm2')">저녁전 (15:30~17:30)</button>`;
+                    buildTimeOptions('leaveStartTime', '08:30');
+                    buildTimeOptions('leaveEndTime', '10:30');
+                } else {
+                    presetBtns.innerHTML = `
+                        <button class="time-preset-btn" onclick="applyTimePreset('am')">오전반차 (08:30~13:00)</button>
+                        <button class="time-preset-btn" onclick="applyTimePreset('pm')">오후반차 (13:00~17:30)</button>`;
+                    buildTimeOptions('leaveStartTime', '08:30');
+                    buildTimeOptions('leaveEndTime', '13:00');
+                }
+                onTimeChange();
+            } else {
+                area.classList.remove('show');
+            }
+        }
+        function applyTimePreset(preset) {
+            const presets = {
+                'am': ['08:30', '13:00'], 'pm': ['13:00', '17:30'],
+                'q-am1': ['08:30', '10:30'], 'q-am2': ['10:30', '12:30'],
+                'q-pm1': ['13:30', '15:30'], 'q-pm2': ['15:30', '17:30']
+            };
+            const [s, e] = presets[preset] || ['08:30', '13:00'];
+            document.getElementById('leaveStartTime').value = s;
+            document.getElementById('leaveEndTime').value = e;
+            // 프리셋 버튼 활성화
+            document.querySelectorAll('.time-preset-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            onTimeChange();
+        }
+        function onTimeChange() {
+            const s = document.getElementById('leaveStartTime').value;
+            const e = document.getElementById('leaveEndTime').value;
+            const info = document.getElementById('timePickerInfo');
+            if (s && e) {
+                const sh = parseInt(s), sm = parseInt(s.substring(3));
+                const eh = parseInt(e), em = parseInt(e.substring(3));
+                const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+                const diffH = (diffMin / 60).toFixed(1);
+                if (diffMin <= 0) {
+                    info.innerHTML = '<span style="color:var(--accent-red);">종료시간은 시작시간보다 이후여야 합니다</span>';
+                } else {
+                    const ampm = sh < 12 ? '오전' : '오후';
+                    info.innerHTML = `${s} ~ ${e} (<span class="time-picker-hours">${diffH}시간</span>)`;
+                }
+            }
+            // 프리셋 활성화 체크
+            document.querySelectorAll('.time-preset-btn').forEach(b => b.classList.remove('active'));
+        }
         const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
         const weekdays = ['일','월','화','수','목','금','토'];
 
         // ===== Firebase 실시간 저장/로드 =====
+        let lastSyncTimestamp = null;
+
+        function updateSyncStatus(status, text) {
+            const dot = document.getElementById('syncDot');
+            const txt = document.getElementById('syncText');
+            if (!dot || !txt) return;
+            dot.className = 'sync-dot ' + status;
+            txt.textContent = text;
+        }
+        function updateLastSyncTime() {
+            const el = document.getElementById('lastSyncTime');
+            if (!el || !lastSyncTimestamp) return;
+            const now = new Date(), diff = Math.floor((now - lastSyncTimestamp) / 1000);
+            if (diff < 5) el.textContent = '(방금 동기화됨)';
+            else if (diff < 60) el.textContent = `(${diff}초 전 동기화)`;
+            else if (diff < 3600) el.textContent = `(${Math.floor(diff/60)}분 전 동기화)`;
+            else el.textContent = `(${lastSyncTimestamp.toLocaleTimeString('ko-KR')} 동기화)`;
+        }
+        setInterval(updateLastSyncTime, 10000);
+
         function saveState() {
             isSaving = true;
+            updateSyncStatus('syncing', '저장 중...');
             // 공유 데이터만 Firebase에 저장
             const sharedData = {
                 users: state.users,
@@ -433,10 +585,14 @@
                 lastUpdated: new Date().toISOString()
             };
             fbDb.ref(DB_ROOT).set(sharedData).then(() => {
+                lastSyncTimestamp = new Date();
+                updateSyncStatus('online', '실시간 연결됨');
+                updateLastSyncTime();
                 setTimeout(() => { isSaving = false; }, 500);
             }).catch(e => {
                 console.error('Firebase save error:', e);
                 isSaving = false;
+                updateSyncStatus('offline', '저장 실패');
                 showToast('데이터 저장 실패. 다시 시도해주세요.', 'error');
             });
             // 개인 설정은 localStorage에 (현재 선택된 사용자 기억)
@@ -500,9 +656,13 @@
                         state.currentUserId = state.users[0].id;
                     }
                     state.currentMonth = new Date().getMonth();
+                    lastSyncTimestamp = new Date();
+                    updateSyncStatus('online', '실시간 연결됨');
+                    updateLastSyncTime();
                     resolve();
                 }).catch(e => {
                     console.error('Firebase load error:', e);
+                    updateSyncStatus('offline', '오프라인 모드');
                     // 오프라인 폴백: localStorage 사용
                     const oldSaved = localStorage.getItem('leaveSystem4');
                     if (oldSaved) {
@@ -529,6 +689,11 @@
                 if (isSaving) return; // 내가 저장한 것이면 무시
                 const data = snapshot.val();
                 if (!data || !data.users) return;
+
+                // 변경 사항 감지 (다른 사용자의 변경 알림용)
+                const prevUserCount = state.users.length;
+                const prevLeaveCount = state.users.reduce((s, u) => s + Object.keys(u.leaves || {}).length, 0);
+
                 // 공유 데이터 업데이트
                 state.users = data.users;
                 state.adminPassword = data.adminPassword || 'ice080303';
@@ -542,7 +707,30 @@
                 if (!state.users.find(u => u.id === state.currentUserId) && state.users.length > 0) {
                     state.currentUserId = state.users[0].id;
                 }
+
+                // 변경 감지 알림
+                const newUserCount = state.users.length;
+                const newLeaveCount = state.users.reduce((s, u) => s + Object.keys(u.leaves || {}).length, 0);
+                if (prevUserCount > 0 && (prevUserCount !== newUserCount || prevLeaveCount !== newLeaveCount)) {
+                    showToast('다른 사용자가 데이터를 업데이트했습니다. 화면이 갱신됩니다.', 'success');
+                    // 화면 깜빡임 효과로 갱신 알림
+                    document.querySelector('.container').classList.add('sync-update-flash');
+                    setTimeout(() => document.querySelector('.container').classList.remove('sync-update-flash'), 1500);
+                }
+
+                lastSyncTimestamp = new Date();
+                updateSyncStatus('online', '실시간 연결됨');
+                updateLastSyncTime();
                 updateUI();
+            });
+
+            // Firebase 연결 상태 모니터링
+            fbDb.ref('.info/connected').on('value', snap => {
+                if (snap.val() === true) {
+                    updateSyncStatus('online', '실시간 연결됨');
+                } else {
+                    updateSyncStatus('offline', '연결 끊김 - 재연결 시도 중');
+                }
             });
         }
         function getCurrentUser() { return state.users.find(u => u.id === state.currentUserId); }
@@ -584,7 +772,7 @@
                 if (state.selectedDates && state.selectedDates.includes(ds)) cls.push('selected');
                 const isClickable = dow !== 0 && dow !== 6 && !holidays2026[ds], leaves = getLeavesForDate(ds);
                 html += `<div class="${cls.join(' ')}" data-date="${ds}" ${isClickable ? `onmousedown="startDrag('${ds}')" onmouseenter="onDrag('${ds}')" onmouseup="endDrag()"` : ''}><div class="day-number">${d}</div><div class="day-leaves">`;
-                leaves.forEach(l => { let statusCls = l.status === 'cancel-requested' ? 'cancel-requested' : l.status; html += `<div class="day-leave-item user-${l.userId} ${statusCls}">${l.userName} ${leaveLabels[l.type]}</div>`; });
+                leaves.forEach(l => { let statusCls = l.status === 'cancel-requested' ? 'cancel-requested' : l.status; const timeStr = (l.start_time && l.end_time) ? ' '+l.start_time.substring(0,5)+'~'+l.end_time.substring(0,5) : ''; html += `<div class="day-leave-item user-${l.userId % 15} ${statusCls}">${l.userName} ${leaveLabels[l.type] || leaveLabels['half']}${timeStr}</div>`; });
                 html += '</div></div>';
             }
             document.getElementById('calendar').innerHTML = html + '</div>';
@@ -597,9 +785,10 @@
         function getDateRange(a, b) { const r = []; let s = new Date(a), e = new Date(b); if (s > e) { let t = s; s = e; e = t; } while (s <= e) { r.push(s.toISOString().split('T')[0]); s.setDate(s.getDate() + 1); } return r; }
         document.addEventListener('mouseup', () => { if (isDragging) endDrag(); });
 
+        function getUserColorIndex(uid) { return state.users.findIndex(u => u.id === uid); }
         function getLeavesForDate(ds) {
             const r = [];
-            state.users.forEach(u => { if (u.leaves[ds]) r.push({ userId: u.id, userName: u.name, type: u.leaves[ds].type, status: u.leaves[ds].status }); });
+            state.users.forEach((u, idx) => { if (u.leaves[ds]) { const l = u.leaves[ds]; r.push({ userId: u.id, userIndex: idx, userName: u.name, type: l.type, status: l.status, start_time: l.start_time || '', end_time: l.end_time || '', hours: l.hours || 0 }); } });
             return r;
         }
 
@@ -631,7 +820,7 @@
             if (sorted.length === 0) { c.innerHTML = '<div class="empty-state"><p>신청된 연차가 없습니다</p></div>'; return; }
             c.innerHTML = sorted.map(([ds, l]) => {
                 const [y, m, d] = ds.split('-'), date = new Date(2026, parseInt(m)-1, parseInt(d)), wd = weekdays[date.getDay()];
-                const dc = l.type === 'full' ? 'var(--accent-green)' : l.type === 'half' ? 'var(--accent-yellow)' : 'var(--accent-purple)';
+                const dc = l.type === 'full' ? 'var(--accent-green)' : (l.type === 'half' || l.type === 'half-am' || l.type === 'half-pm') ? 'var(--accent-yellow)' : 'var(--accent-purple)';
                 let badge = '', actionBtn = '', itemCls = l.status;
                 if (l.status === 'pending') {
                     badge = '<span class="status-badge pending">승인대기</span>';
@@ -642,7 +831,8 @@
                     badge = '<span class="status-badge approved">승인완료</span>';
                     actionBtn = `<button class="btn btn-secondary btn-small" onclick="openCancelRequestModal('${ds}')">취소요청</button>`;
                 }
-                return `<div class="selected-item ${itemCls}"><div class="selected-item-info"><div class="selected-item-dot" style="background:${dc}"></div><div><div class="selected-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) ${badge}</div><div class="selected-item-type">${leaveLabels[l.type]} - ${leaveDeduction[l.type]}일</div></div></div><div>${actionBtn}</div></div>`;
+                const timeStr = (l.start_time && l.end_time) ? ` (${l.start_time.substring(0,5)}~${l.end_time.substring(0,5)})` : '';
+                return `<div class="selected-item ${itemCls}"><div class="selected-item-info"><div class="selected-item-dot" style="background:${dc}"></div><div><div class="selected-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) ${badge}</div><div class="selected-item-type">${leaveLabels[l.type] || '반차'} - ${leaveDeduction[l.type] || 0.5}일${timeStr}</div></div></div><div>${actionBtn}</div></div>`;
             }).join('');
         }
 
@@ -698,24 +888,59 @@
                 document.getElementById('leaveModalTitle').textContent = `${u.name} - ${parseInt(m)}월 ${parseInt(d)}일`;
                 const leaves = getLeavesForDate(firstDs), ic = document.getElementById('dateLeavesInfo');
                 if (leaves.length > 0) {
-                    ic.innerHTML = '<div class="date-leaves-title">이 날짜의 연차 현황</div>' + leaves.map(l => `<div class="date-leave-user"><div class="date-leave-user-dot" style="background:${userColors[l.userId % userColors.length]}"></div><span>${l.userName}</span><span style="color:var(--text-secondary);margin-left:auto">${leaveLabels[l.type]}</span></div>`).join('');
+                    ic.innerHTML = '<div class="date-leaves-title">이 날짜의 연차 현황</div>' + leaves.map(l => { const ts = (l.start_time && l.end_time) ? ' ('+l.start_time.substring(0,5)+'~'+l.end_time.substring(0,5)+')' : ''; return `<div class="date-leave-user"><div class="date-leave-user-dot" style="background:${userColors[l.userId % userColors.length]}"></div><span>${l.userName}</span><span style="color:var(--text-secondary);margin-left:auto">${leaveLabels[l.type] || '반차'}${ts}</span></div>`; }).join('');
                     ic.style.display = 'block';
                 } else ic.style.display = 'none';
             }
             document.querySelectorAll('.leave-option').forEach(o => o.classList.remove('selected'));
             document.getElementById('leaveModal').classList.add('active');
         }
-        function closeLeaveModal() { document.getElementById('leaveModal').classList.remove('active'); state.selectedDates = []; state.selectedType = null; renderCalendar(); }
-        function selectLeaveType(t) { state.selectedType = t; document.querySelectorAll('.leave-option').forEach(o => o.classList.remove('selected')); document.querySelector(`.leave-option[data-type="${t}"]`).classList.add('selected'); }
+        function closeLeaveModal() { document.getElementById('leaveModal').classList.remove('active'); state.selectedDates = []; state.selectedType = null; document.getElementById('timePickerArea').classList.remove('show'); renderCalendar(); }
+        function selectLeaveType(t) { state.selectedType = t; document.querySelectorAll('.leave-option').forEach(o => o.classList.remove('selected')); document.querySelector(`.leave-option[data-type="${t}"]`).classList.add('selected'); showTimePicker(t); }
         function confirmLeave() {
             if (!state.selectedDates || state.selectedDates.length === 0 || !state.selectedType) { showToast('연차 유형을 선택해주세요.', 'error'); return; }
-            const u = getCurrentUser(), totalDays = state.selectedDates.length * leaveDeduction[state.selectedType];
+            const selType = state.selectedType;
+            const isTimeBased = (selType === 'half' || selType === 'quarter');
+
+            // 시간 기반 유형: 시간 유효성 검사
+            let startTime = '', endTime = '', hours = 0;
+            if (isTimeBased) {
+                startTime = document.getElementById('leaveStartTime').value;
+                endTime = document.getElementById('leaveEndTime').value;
+                if (!startTime || !endTime) { showToast('시간을 선택해주세요.', 'error'); return; }
+                const sh = parseInt(startTime), sm = parseInt(startTime.substring(3));
+                const eh = parseInt(endTime), em = parseInt(endTime.substring(3));
+                const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+                if (diffMin <= 0) { showToast('종료시간은 시작시간보다 이후여야 합니다.', 'error'); return; }
+                hours = diffMin / 60;
+            }
+
+            const u = getCurrentUser(), totalDays = state.selectedDates.length * leaveDeduction[selType];
             if (!u.unlimited) {
                 const t = getTotalLeave(u), will = calculateUsed(u) + calculatePending(u) + totalDays;
                 if (will > t) { showToast('잔여 연차가 부족합니다!', 'error'); return; }
             }
-            state.selectedDates.forEach(ds => { u.leaves[ds] = { type: state.selectedType, status: 'pending', requestDate: new Date().toISOString() }; });
-            const msg = state.selectedDates.length > 1 ? `${state.selectedDates.length}일 연차 신청 완료` : `${leaveLabels[state.selectedType]} 신청 완료`;
+
+            // 저장할 type 결정 (반차는 시간에 따라 half-am/half-pm으로 구분)
+            let saveType = selType;
+            if (selType === 'half') {
+                const sh = parseInt(startTime);
+                const eh = parseInt(endTime);
+                const midH = (sh + eh) / 2;
+                saveType = midH < 13 ? 'half-am' : 'half-pm';
+            }
+
+            state.selectedDates.forEach(ds => {
+                const leaveData = { type: saveType, status: 'pending', requestDate: new Date().toISOString() };
+                if (isTimeBased) {
+                    leaveData.start_time = startTime + ':00';
+                    leaveData.end_time = endTime + ':00';
+                    leaveData.hours = hours;
+                }
+                u.leaves[ds] = leaveData;
+            });
+            const timeLabel = isTimeBased ? ` (${startTime}~${endTime})` : '';
+            const msg = state.selectedDates.length > 1 ? `${state.selectedDates.length}일 ${leaveLabels[saveType]} 신청 완료${timeLabel}` : `${leaveLabels[saveType]} 신청 완료${timeLabel}`;
             showToast(`${msg}. 관리자 승인을 기다려주세요.`, 'success');
             closeLeaveModal(); saveState(); updateUI();
         }
@@ -746,12 +971,13 @@
 
         function renderPendingList() {
             const c = document.getElementById('pendingList'), items = [];
-            state.users.forEach(u => Object.entries(u.leaves).forEach(([ds, l]) => { if (l.status === 'pending') items.push({ userId: u.id, userName: u.name, date: ds, type: l.type }); }));
+            state.users.forEach(u => Object.entries(u.leaves).forEach(([ds, l]) => { if (l.status === 'pending') items.push({ userId: u.id, userName: u.name, date: ds, type: l.type, start_time: l.start_time||'', end_time: l.end_time||'' }); }));
             if (items.length === 0) { c.innerHTML = '<div class="empty-state"><p>승인 대기 중인 연차가 없습니다.</p></div>'; } else {
                 items.sort((a, b) => a.date.localeCompare(b.date));
                 c.innerHTML = '<div style="font-weight:600;margin-bottom:10px;color:var(--accent-orange)">📋 승인 대기</div>' + items.map(i => {
                     const [y, m, d] = i.date.split('-'), date = new Date(2026, parseInt(m)-1, parseInt(d)), wd = weekdays[date.getDay()];
-                    return `<div class="pending-item"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[i.userId % userColors.length]}"></div><div class="pending-item-info"><div class="pending-item-user">${i.userName}</div><div class="pending-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) - ${leaveLabels[i.type]} (${leaveDeduction[i.type]}일)</div></div><div class="pending-item-actions"><button class="btn btn-success btn-small" onclick="approveLeave(${i.userId},'${i.date}')">승인</button><button class="btn btn-danger btn-small" onclick="rejectLeave(${i.userId},'${i.date}')">반려</button></div></div>`;
+                    const ts = (i.start_time && i.end_time) ? ' '+i.start_time.substring(0,5)+'~'+i.end_time.substring(0,5) : '';
+                    return `<div class="pending-item"><div style="width:12px;height:12px;border-radius:50%;background:${userColors[i.userId % userColors.length]}"></div><div class="pending-item-info"><div class="pending-item-user">${i.userName}</div><div class="pending-item-date">${parseInt(m)}월 ${parseInt(d)}일 (${wd}) - ${leaveLabels[i.type] || '반차'} (${leaveDeduction[i.type] || 0.5}일)${ts}</div></div><div class="pending-item-actions"><button class="btn btn-success btn-small" onclick="approveLeave(${i.userId},'${i.date}')">승인</button><button class="btn btn-danger btn-small" onclick="rejectLeave(${i.userId},'${i.date}')">반려</button></div></div>`;
                 }).join('');
             }
             renderCancelRequestList();
@@ -827,7 +1053,7 @@
                 const used = calculateUsed(u), pend = getPendingCount(u), bt = getTotalBonus(u);
                 const info = u.unlimited ? `무제한 | 사용: ${used}일 | 대기: ${pend}건` : `총: ${getTotalLeave(u)}일 (기본 ${u.totalLeave} + 포상 ${bt}) | 사용: ${used}일 | 잔여: ${getTotalLeave(u) - used}일 | 대기: ${pend}건`;
                 const entries = Object.entries(u.leaves).sort((a, b) => a[0].localeCompare(b[0]));
-                return `<div style="background:var(--bg-tertiary);border-radius:10px;padding:14px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:10px;height:10px;border-radius:50%;background:${userColors[u.id % userColors.length]}"></div><div style="flex:1"><div style="font-weight:500;font-size:0.9rem">${u.name}</div><div style="font-size:0.85rem;color:var(--text-secondary)">${info}</div></div><button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem" onclick="openEditLeaveModal(${u.id})">연차 설정</button></div>${entries.length > 0 ? `<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">신청 내역:</div><div style="display:flex;flex-wrap:wrap;gap:6px">${entries.map(([ds, l]) => { const [y, m, d] = ds.split('-'); return `<div style="display:flex;align-items:center;gap:5px;background:var(--bg-primary);padding:4px 8px;border-radius:5px;font-size:0.75rem"><span style="font-weight:500">${parseInt(m)}/${parseInt(d)} ${leaveLabels[l.type]}</span><span style="color:${l.status === 'pending' ? 'var(--accent-orange)' : 'var(--accent-green)'};font-size:0.7rem">${l.status === 'pending' ? '대기' : '승인'}</span><button onclick="adminDeleteLeave(${u.id},'${ds}')" style="background:none;border:none;color:var(--accent-red);cursor:pointer;padding:1px;font-size:0.65rem">✕</button></div>`; }).join('')}</div>` : '<div style="font-size:0.75rem;color:var(--text-secondary)">신청 내역 없음</div>'}</div>`;
+                return `<div style="background:var(--bg-tertiary);border-radius:10px;padding:14px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:10px;height:10px;border-radius:50%;background:${userColors[u.id % userColors.length]}"></div><div style="flex:1"><div style="font-weight:500;font-size:0.9rem">${u.name}</div><div style="font-size:0.85rem;color:var(--text-secondary)">${info}</div></div><button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem" onclick="openEditLeaveModal(${u.id})">연차 설정</button></div>${entries.length > 0 ? `<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">신청 내역:</div><div style="display:flex;flex-wrap:wrap;gap:6px">${entries.map(([ds, l]) => { const [y, m, d] = ds.split('-'); const ts = (l.start_time && l.end_time) ? ' '+l.start_time.substring(0,5)+'~'+l.end_time.substring(0,5) : ''; return `<div style="display:flex;align-items:center;gap:5px;background:var(--bg-primary);padding:4px 8px;border-radius:5px;font-size:0.75rem"><span style="font-weight:500">${parseInt(m)}/${parseInt(d)} ${leaveLabels[l.type] || '반차'}${ts}</span><span style="color:${l.status === 'pending' ? 'var(--accent-orange)' : 'var(--accent-green)'};font-size:0.7rem">${l.status === 'pending' ? '대기' : '승인'}</span><button onclick="adminDeleteLeave(${u.id},'${ds}')" style="background:none;border:none;color:var(--accent-red);cursor:pointer;padding:1px;font-size:0.65rem">✕</button></div>`; }).join('')}</div>` : '<div style="font-size:0.75rem;color:var(--text-secondary)">신청 내역 없음</div>'}</div>`;
             }).join('');
         }
         function adminDeleteLeave(uid, ds) { const u = state.users.find(x => x.id === uid); if (u && confirm(`${u.name}의 해당 연차를 삭제하시겠습니까?`)) { delete u.leaves[ds]; saveState(); renderLeaveManageList(); renderPendingList(); updatePendingCount(); updateUI(); showToast('연차가 삭제되었습니다.', 'success'); } }
@@ -952,16 +1178,18 @@
             });
 
             // 시트2: 연차 사용일자 상세
-            const detailData = [['이름', '날짜', '연차유형', '차감일수', '상태']];
+            const detailData = [['이름', '날짜', '연차유형', '시간', '차감일수', '상태']];
             state.users.forEach(u => {
                 const entries = Object.entries(u.leaves).sort((a, b) => a[0].localeCompare(b[0]));
                 entries.forEach(([ds, l]) => {
                     const [y, m, d] = ds.split('-');
+                    const ts = (l.start_time && l.end_time) ? l.start_time.substring(0,5)+'~'+l.end_time.substring(0,5) : '종일';
                     detailData.push([
                         u.name,
                         `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`,
-                        leaveLabels[l.type],
-                        leaveDeduction[l.type],
+                        leaveLabels[l.type] || '반차',
+                        ts,
+                        leaveDeduction[l.type] || 0.5,
                         l.status === 'pending' ? '승인대기' : l.status === 'cancel-requested' ? '취소요청' : '승인완료'
                     ]);
                 });
@@ -974,7 +1202,7 @@
             
             // 열 너비 설정
             ws1['!cols'] = [{wch:10},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8}];
-            ws2['!cols'] = [{wch:10},{wch:18},{wch:10},{wch:10},{wch:10}];
+            ws2['!cols'] = [{wch:10},{wch:18},{wch:10},{wch:14},{wch:10},{wch:10}];
             
             XLSX.utils.book_append_sheet(wb, ws1, '연차현황');
             XLSX.utils.book_append_sheet(wb, ws2, '사용일자상세');
